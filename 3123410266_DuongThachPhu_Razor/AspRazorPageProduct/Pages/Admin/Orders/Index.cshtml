@@ -1,0 +1,114 @@
+@page
+@model AspRazorPageProduct.Pages.Admin.Orders.IndexModel
+@{
+    ViewData["Title"] = "Quản Lý Đơn Hàng - TechStore Admin";
+    var totalOrders = Model.Orders.Count;
+    var totalRevenue = Model.TotalRevenue;
+    var pendingCount = Model.Orders.Count(x => x.Status == "Chờ xác nhận" || x.Status == "Pending");
+}
+
+<!-- Admin Header Banner -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 p-4 rounded-4 bg-dark text-white shadow-sm">
+    <div>
+        <span class="badge bg-warning text-dark text-uppercase px-3 py-1 mb-2 fw-bold">QUẢN TRỊ ĐƠN HÀNG</span>
+        <h1 class="fs-3 fw-bold mb-1">Xử Lý &amp; Theo Dõi Đơn Hàng</h1>
+        <p class="text-white-50 small mb-0">Theo dõi trạng thái thanh toán và địa chỉ giao hàng của khách.</p>
+    </div>
+</div>
+
+<!-- KPI Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 rounded-4 shadow-sm p-3 bg-white border-start border-4 border-primary">
+            <span class="text-muted small fw-bold text-uppercase">Tổng Số Đơn Hàng</span>
+            <strong class="fs-3 text-dark mt-1">@totalOrders</strong>
+            <small class="text-muted">Đã ghi nhận vào cơ sở dữ liệu</small>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 rounded-4 shadow-sm p-3 bg-white border-start border-4 border-success">
+            <span class="text-muted small fw-bold text-uppercase">Doanh Thu Toàn Bộ</span>
+            <strong class="fs-3 text-success mt-1">@totalRevenue.ToString("N0")₫</strong>
+            <small class="text-muted">Không tính đơn đã hủy</small>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 rounded-4 shadow-sm p-3 bg-white border-start border-4 border-warning">
+            <span class="text-muted small fw-bold text-uppercase">Đơn Chờ Xử Lý</span>
+            <strong class="fs-3 text-warning mt-1">@pendingCount</strong>
+            <small class="text-muted">Cần đóng gói &amp; gọi xác nhận</small>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 rounded-4 shadow-sm mb-5 bg-white overflow-hidden">
+    @if (TempData["OrderSuccess"] is string successMessage)
+    {
+        <div class="alert alert-success m-3 mb-0" role="alert">@successMessage</div>
+    }
+    @if (TempData["OrderError"] is string errorMessage)
+    {
+        <div class="alert alert-danger m-3 mb-0" role="alert">@errorMessage</div>
+    }
+    <div class="card-header bg-white py-3 px-4 border-bottom">
+        <h5 class="fw-bold mb-0">Danh sách đơn hàng (@totalOrders)</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle table-hover mb-0">
+            <thead class="table-light small text-muted text-uppercase">
+                <tr>
+                    <th scope="col" style="width: 80px;">Mã Đơn</th>
+                    <th scope="col">Ngày Đặt</th>
+                    <th scope="col">Khách Hàng</th>
+                    <th scope="col">Số Điện Thoại</th>
+                    <th scope="col">Thanh Toán</th>
+                    <th scope="col">Tổng Tiền</th>
+                    <th scope="col">Trạng Thái</th>
+                    <th scope="col" class="text-end">Chi Tiết</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Orders.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Chưa có đơn hàng nào được đặt.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var order in Model.Orders)
+                    {
+                        <tr>
+                            <td class="fw-bold text-primary font-monospace">#@order.OrderId</td>
+                            <td class="text-muted small">@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="fw-semibold">@order.CustomerName</td>
+                            <td class="small">@order.CustomerPhone</td>
+                            <td><span class="badge bg-light text-dark border">@order.PaymentMethod</span></td>
+                            <td class="fw-bold text-danger font-monospace">@order.TotalAmount.ToString("N0")₫</td>
+                            <td>
+                                <partial name="/Pages/Shared/_OrderStatusBadge.cshtml" model="order.Status" />
+                            </td>
+                            <td class="text-end">
+                                <a asp-page="/Admin/Orders/Details" asp-route-id="@order.OrderId" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    <i class="bi bi-eye me-1"></i>Xem chi tiết
+                                </a>
+                                @if (order.Status != "Đã giao" && order.Status != "Đã hủy")
+                                {
+                                    <form method="post" asp-page-handler="CancelOrder" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+                                        <input type="hidden" name="orderId" value="@order.OrderId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                            <i class="bi bi-x-circle me-1"></i>Hủy đơn
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

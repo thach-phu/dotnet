@@ -1,0 +1,146 @@
+@implements IDisposable
+@inject CartService Cart
+
+<header class="store-navbar">
+    <div class="nav-container">
+        <a class="nav-brand" href="">
+            <span class="brand-apple-icon"></span>
+            <div class="brand-text">
+                <span class="brand-name">Phú Store</span>
+                <span class="brand-sub">Authorised Reseller</span>
+            </div>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="nav-links">
+            <NavLink class="nav-link-item" href="" Match="NavLinkMatch.All">
+                Trang chủ
+            </NavLink>
+            <NavLink class="nav-link-item" href="products">
+                Sản phẩm
+            </NavLink>
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink class="nav-link-item" href="orders">
+                        Đơn hàng của tôi
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
+            <AuthorizeView>
+                <Authorized>
+                    @if (Permissions.HasAnyAdminAccess(context.User))
+                    {
+                        <NavLink class="nav-link-item nav-admin-link" href="admin">
+                            <span class="nav-icon">⚙</span> Quản trị
+                        </NavLink>
+                    }
+                </Authorized>
+            </AuthorizeView>
+        </nav>
+
+        <!-- Right actions -->
+        <div class="nav-actions">
+            <a class="cart-pill-btn" href="cart" title="Giỏ hàng">
+                <span class="cart-icon">🛒</span>
+                <span class="cart-label">Giỏ hàng</span>
+                @if (Cart.ItemCount > 0)
+                {
+                    <span class="cart-badge-count">@Cart.ItemCount</span>
+                }
+            </a>
+
+            <AuthorizeView>
+                <Authorized>
+                    <div class="user-pill">
+                        <span class="user-avatar">👤</span>
+                        <span class="user-name">@context.User.FindFirstValue(ClaimTypes.Name)</span>
+                        <form method="post" action="/logout">
+                            <button type="submit" class="logout-btn" title="Đăng xuất">↪</button>
+                        </form>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="login-btn" href="login" title="Đăng nhập">
+                        <span>Đăng nhập</span>
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
+
+            <button class="mobile-toggle-btn" @onclick="ToggleMobileMenu" aria-label="Mở menu">
+                <span>@(isMobileMenuOpen ? "✕" : "☰")</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Drawer -->
+    @if (isMobileMenuOpen)
+    {
+        <div class="mobile-menu-backdrop" @onclick="CloseMobileMenu"></div>
+        <div class="mobile-menu-drawer">
+            <div class="mobile-menu-header">
+                <span class="brand-name"> Phú Store</span>
+                <button class="mobile-close-btn" @onclick="CloseMobileMenu">✕</button>
+            </div>
+            <div class="mobile-menu-links">
+                <NavLink class="mobile-nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseMobileMenu">
+                    ⌂ Trang chủ
+                </NavLink>
+                <NavLink class="mobile-nav-link" href="products" @onclick="CloseMobileMenu">
+                    📱 Sản phẩm
+                </NavLink>
+                <AuthorizeView>
+                    <Authorized>
+                        <NavLink class="mobile-nav-link" href="orders" @onclick="CloseMobileMenu">
+                            📦 Đơn hàng của tôi
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+                <NavLink class="mobile-nav-link" href="cart" @onclick="CloseMobileMenu">
+                    🛒 Giỏ hàng (@Cart.ItemCount)
+                </NavLink>
+                <AuthorizeView>
+                    <Authorized>
+                        @if (Permissions.HasAnyAdminAccess(context.User))
+                        {
+                            <NavLink class="mobile-nav-link" href="admin" @onclick="CloseMobileMenu">
+                                ⚙ Bảng điều khiển Quản trị
+                            </NavLink>
+                        }
+                        <form method="post" action="/logout">
+                            <button type="submit" class="mobile-nav-link mobile-logout-btn">
+                                ↪ Đăng xuất (@context.User.FindFirstValue(ClaimTypes.Name))
+                            </button>
+                        </form>
+                    </Authorized>
+                    <NotAuthorized>
+                        <NavLink class="mobile-nav-link" href="login" @onclick="CloseMobileMenu">
+                            🔐 Đăng nhập
+                        </NavLink>
+                        <NavLink class="mobile-nav-link" href="register" @onclick="CloseMobileMenu">
+                            📝 Đăng ký tài khoản
+                        </NavLink>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    }
+</header>
+
+@code {
+    private bool isMobileMenuOpen;
+
+    protected override void OnInitialized()
+    {
+        Cart.Changed += HandleStateChanged;
+    }
+
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    private void ToggleMobileMenu() => isMobileMenuOpen = !isMobileMenuOpen;
+    private void CloseMobileMenu() => isMobileMenuOpen = false;
+
+    public void Dispose()
+    {
+        Cart.Changed -= HandleStateChanged;
+    }
+}

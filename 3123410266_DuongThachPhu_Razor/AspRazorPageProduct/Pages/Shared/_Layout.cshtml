@@ -1,0 +1,215 @@
+@using AspRazorPageProduct.Models
+@inject AspRazorPageProduct.Services.ICartService CartService
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - TechStore Vietnam | Siêu Thị Công Nghệ</title>
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap & Icons -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/AspRazorPageProduct.styles.css" asp-append-version="true" />
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Announcement Bar -->
+    <div class="ts-announcement-bar">
+        <span>⚡ <b>TechStore Vietnam</b> • Hệ thống bán lẻ công nghệ hàng đầu • Miễn phí vận chuyển toàn quốc cho đơn từ 2.000.000₫ • Hotline 24/7: 1900 8888</span>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <header>
+        <nav class="navbar navbar-expand-lg ts-navbar">
+            <div class="container">
+                <!-- Brand Logo -->
+                <a class="ts-brand me-4" asp-page="/Index">
+                    <span class="ts-brand-badge"><i class="bi bi-cpu-fill"></i></span>
+                    <span>Tech<span class="ts-brand-accent">Store</span></span>
+                </a>
+
+                <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+                        aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <!-- Left Nav Links -->
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
+                        <li class="nav-item">
+                            <a class="nav-link ts-nav-link" asp-page="/Index">
+                                <i class="bi bi-grid-fill me-1"></i>Sản phẩm
+                            </a>
+                        </li>
+                        @if (User.HasClaim(Permissions.ClaimType, Permissions.ProductsManage))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link ts-nav-link ts-nav-admin" asp-page="/Admin/Products/Index">
+                                    <i class="bi bi-gear-fill me-1"></i>Quản trị kho
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link ts-nav-link ts-nav-admin" asp-page="/Admin/Categories/Index">
+                                    <i class="bi bi-tags-fill me-1"></i>Danh mục
+                                </a>
+                            </li>
+                        }
+                        @if (User.HasClaim(Permissions.ClaimType, Permissions.OrdersManage))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link ts-nav-link ts-nav-admin" asp-page="/Admin/Orders/Index">
+                                    <i class="bi bi-receipt me-1"></i>Đơn hàng
+                                </a>
+                            </li>
+                        }
+                        @if (User.HasClaim(Permissions.ClaimType, Permissions.UsersManage))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link ts-nav-link ts-nav-admin" asp-page="/Admin/Users/Index">
+                                    <i class="bi bi-people-fill me-1"></i>Người dùng
+                                </a>
+                            </li>
+                        }
+                    </ul>
+
+                    @{
+                        int cartCount = 0;
+                        try { cartCount = CartService.GetTotalCount(); } catch { }
+                    }
+
+                    <!-- Right User / Cart Actions -->
+                    <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a asp-page="/OrderHistory" class="ts-nav-link text-white text-decoration-none">
+                                <i class="bi bi-clock-history me-1"></i>Đơn mua
+                            </a>
+                            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">
+                                👤 @User.Identity.Name
+                            </span>
+                            <form method="post" asp-page="/Account/Logout" class="d-inline m-0">
+                                <button type="submit" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1">
+                                    Đăng xuất
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-outline-light rounded-pill px-3 py-1 fw-bold fs-6">
+                                Đăng nhập
+                            </a>
+                        }
+
+                        <a asp-page="/Cart" class="ts-cart-btn text-decoration-none">
+                            <i class="bi bi-cart3 fs-5"></i>
+                            <span>Giỏ hàng</span>
+                            @if (cartCount > 0)
+                            {
+                                <span class="ts-cart-badge">@cartCount</span>
+                            }
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Page Body -->
+    <div class="container flex-grow-1 my-4">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- TechStore Footer -->
+    <footer class="ts-footer">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="ts-brand mb-3">
+                        <span class="ts-brand-badge"><i class="bi bi-cpu-fill"></i></span>
+                        <span>Tech<span class="ts-brand-accent">Store</span></span>
+                    </div>
+                    <p class="text-secondary small mb-3">
+                        Hệ thống bán lẻ thiết bị công nghệ, điện thoại, máy tính bảng và phụ kiện chính hãng tại Việt Nam. Uy tín tạo niềm tin - Dịch vụ bảo hành tận tâm.
+                    </p>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-2">✓ 100% Chính Hãng</span>
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-2">✓ Bảo Hành 12T</span>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-6 col-6">
+                    <h5 class="ts-footer-title">Danh Mục</h5>
+                    <ul class="ts-footer-links">
+                        <li><a asp-page="/Index" asp-route-Category="Laptop">Laptop & Mac</a></li>
+                        <li><a asp-page="/Index" asp-route-Category="Điện thoại">Smartphone</a></li>
+                        <li><a asp-page="/Index" asp-route-Category="Phụ kiện">Phụ kiện công nghệ</a></li>
+                        <li><a asp-page="/Index" asp-route-Category="Âm thanh">Tai nghe &amp; Loa</a></li>
+                        <li><a asp-page="/Index" asp-route-Category="Đồng hồ">Smartwatch</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-6 col-6">
+                    <h5 class="ts-footer-title">Chính Sách &amp; Hỗ Trợ</h5>
+                    <ul class="ts-footer-links">
+                        <li><a href="javascript:void(0);">Chính sách đổi trả 1-1</a></li>
+                        <li><a href="javascript:void(0);">Chính sách giao hàng toàn quốc</a></li>
+                        <li><a href="javascript:void(0);">Trả góp 0% qua thẻ tín dụng</a></li>
+                        <li><a href="javascript:void(0);">Tra cứu bảo hành điện tử</a></li>
+                        <li><a asp-page="/Admin/Dashboard/Index">Cổng quản trị nội bộ</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="ts-footer-title">Showroom &amp; Liên Hệ</h5>
+                    <ul class="ts-footer-links small text-secondary">
+                        <li class="mb-2"><strong>📞 Hotline:</strong> 1900 8888 (8:00 - 21:30)</li>
+                        <li class="mb-2"><strong>🛠 Kỹ thuật:</strong> 1900 8889 (8:30 - 20:00)</li>
+                        <li class="mb-2"><strong>📍 Showroom HCM:</strong> 456 Đường Sư Vạn Hạnh, Quận 10</li>
+                        <li class="mb-2"><strong>📧 Email:</strong> support@techstore.vn</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="ts-footer-bottom">
+                <div>
+                    &copy; 2026 TechStore Vietnam. Giữ toàn quyền bảo lưu.
+                </div>
+                <div class="d-flex gap-3 text-secondary">
+                    <span>💵 COD</span>
+                    <span>💳 Visa / MasterCard</span>
+                    <span>📱 VietQR</span>
+                    <span>👛 MoMo</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

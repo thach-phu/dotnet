@@ -1,0 +1,299 @@
+@page
+@model AspRazorPageProduct.Pages.Admin.Users.IndexModel
+@{
+    ViewData["Title"] = "Người Dùng & Phân Quyền - TechStore Admin";
+    var userCountByRole = Model.UserRoleIds.Values
+        .GroupBy(roleId => roleId)
+        .ToDictionary(g => g.Key, g => g.Count());
+}
+
+<!-- Admin Header Banner -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 p-4 rounded-4 bg-dark text-white shadow-sm">
+    <div>
+        <span class="badge bg-warning text-dark text-uppercase px-3 py-1 mb-2 fw-bold">QUẢN TRỊ HỆ THỐNG</span>
+        <h1 class="fs-3 fw-bold mb-1">Người Dùng &amp; Phân Quyền</h1>
+        <p class="text-white-50 small mb-0">Quản lý tài khoản, vai trò và quyền truy cập khu vực quản trị TechStore.</p>
+    </div>
+    <button type="button" class="btn btn-warning text-dark fw-bold rounded-pill px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#newAccountModal">
+        <i class="bi bi-person-plus-fill me-1"></i> Thêm tài khoản
+    </button>
+</div>
+
+@if (TempData["AdminError"] is string errorMessage)
+{
+    <div class="alert alert-danger rounded-3 py-2 px-3 small mb-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>@errorMessage
+    </div>
+}
+@if (TempData["AdminSuccess"] is string successMessage)
+{
+    <div class="alert alert-success rounded-3 py-2 px-3 small mb-3" role="alert">
+        <i class="bi bi-check-circle-fill me-1"></i>@successMessage
+    </div>
+}
+
+<!-- Danh sách người dùng -->
+<div class="card border-0 rounded-4 shadow-sm mb-4 bg-white overflow-hidden">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+            <i class="bi bi-people-fill text-primary me-2"></i>Danh sách người dùng (@Model.Users.Count)
+        </h5>
+        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">Tài khoản thành viên</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle table-hover mb-0">
+            <thead class="table-light small text-muted text-uppercase">
+                <tr>
+                    <th class="ps-4">Họ tên</th>
+                    <th>Email</th>
+                    <th>Số điện thoại</th>
+                    <th>Ngày tạo</th>
+                    <th style="width: 260px;">Vai trò &amp; Cập nhật</th>
+                    <th>Trạng thái</th>
+                    <th class="pe-4 text-end">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.Users)
+                {
+                    var isDisabled = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
+                    <tr>
+                        <td class="ps-4">
+                            <strong class="d-block text-dark">@user.FullName</strong>
+                        </td>
+                        <td>
+                            <span class="small font-monospace text-secondary">@user.Email</span>
+                        </td>
+                        <td class="small text-muted">
+                            @(string.IsNullOrWhiteSpace(user.PhoneNumber) ? "Chưa cập nhật" : user.PhoneNumber)
+                        </td>
+                        <td class="text-muted small">
+                            <i class="bi bi-calendar3 me-1"></i>@user.CreatedAt.ToString("dd/MM/yyyy")
+                        </td>
+                        <td>
+                            <form method="post" asp-page-handler="UpdateUserRole" class="d-flex gap-2">
+                                <input type="hidden" name="userId" value="@user.Id" />
+                                <select name="roleId" class="form-select form-select-sm rounded-3">
+                                    @{ var currentRoleId = Model.UserRoleIds.GetValueOrDefault(user.Id); }
+                                    @foreach (var role in Model.Roles)
+                                    {
+                                        if (role.Id == currentRoleId)
+                                        {
+                                            <option value="@role.Id" selected>@role.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@role.Id">@role.Name</option>
+                                        }
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary rounded-3 text-nowrap px-3">
+                                    <i class="bi bi-check-lg me-1"></i>Lưu
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            @if (isDisabled)
+                            {
+                                <span class="order-status-badge status-cancelled">Đã khóa</span>
+                            }
+                            else
+                            {
+                                <span class="order-status-badge status-completed">Hoạt động</span>
+                            }
+                        </td>
+                        <td class="pe-4 text-end text-nowrap">
+                            <form method="post" asp-page-handler="SetUserLockout" class="d-inline">
+                                <input type="hidden" name="userId" value="@user.Id" />
+                                <input type="hidden" name="disabled" id="lockout-disabled-@user.Id" value="@(!isDisabled)" />
+                                <label class="toggle-switch" title="@(isDisabled ? "Bật tài khoản" : "Tắt tài khoản")">
+                                    <input type="checkbox" checked="@(!isDisabled)"
+                                           onchange="document.getElementById('lockout-disabled-@user.Id').value = !this.checked; this.form.submit();" />
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </form>
+                            <form method="post" asp-page-handler="DeleteUser" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản này?');">
+                                <input type="hidden" name="userId" value="@user.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Danh sách vai trò -->
+    <div class="col-lg-5">
+        <div class="card border-0 rounded-4 shadow-sm bg-white h-100 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-shield-lock-fill text-warning me-2"></i>Vai trò (@Model.Roles.Count)
+                </h5>
+            </div>
+            <div class="table-responsive mb-4">
+                <table class="table align-middle table-sm mb-0">
+                    <thead class="small text-muted text-uppercase">
+                        <tr>
+                            <th>Tên vai trò</th>
+                            <th class="text-center">Số người</th>
+                            <th class="text-end">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in Model.Roles)
+                        {
+                            var count = userCountByRole.GetValueOrDefault(role.Id);
+                            <tr>
+                                <td>
+                                    <span class="fw-semibold text-dark">@role.Name</span>
+                                    @if (role.IsSystemRole)
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary ms-1">Hệ thống</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(role.Description))
+                                    {
+                                        <div class="text-muted small">@role.Description</div>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border">@count</span>
+                                </td>
+                                <td class="text-end">
+                                    @if (role.IsSystemRole || count > 0)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2" disabled
+                                                title="@(role.IsSystemRole ? "Không thể xóa vai trò hệ thống" : "Không thể xóa vai trò đang có người dùng")">
+                                            <i class="bi bi-lock-fill"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-page-handler="DeleteRole" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa vai trò này?');">
+                                            <input type="hidden" name="roleId" value="@role.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-3 bg-light rounded-3 border mt-auto">
+                <h6 class="fw-bold small mb-2"><i class="bi bi-plus-circle text-primary me-1"></i>Thêm vai trò mới</h6>
+                <form method="post" asp-page-handler="CreateRole" class="d-flex gap-2 flex-wrap">
+                    <input type="text" name="name" class="form-control form-control-sm rounded-3" placeholder="Tên vai trò..." style="flex: 1; min-width: 140px;" required />
+                    <input type="text" name="description" class="form-control form-control-sm rounded-3" placeholder="Mô tả..." style="flex: 1; min-width: 140px;" />
+                    <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3">+ Thêm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ma trận phân quyền -->
+    <div class="col-lg-7">
+        <div class="card border-0 rounded-4 shadow-sm bg-white h-100 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-sliders text-success me-2"></i>Phân quyền chi tiết theo vai trò
+                </h5>
+            </div>
+            <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                Thay đổi quyền ở đây sẽ áp dụng khi người dùng đăng nhập lại vào hệ thống.
+            </div>
+            <div style="max-height: 480px; overflow-y: auto;">
+                @foreach (var role in Model.Roles)
+                {
+                    var current = Model.RolePermissions.GetValueOrDefault(role.Id, []);
+                    <form method="post" asp-page-handler="SaveRolePermissions" class="border rounded-3 p-3 mb-3 bg-light">
+                        <input type="hidden" name="roleId" value="@role.Id" />
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                            <span class="fw-bold text-dark fs-6">
+                                <i class="bi bi-shield-check text-primary me-1"></i>@role.Name
+                            </span>
+                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3">
+                                <i class="bi bi-save me-1"></i>Lưu quyền
+                            </button>
+                        </div>
+                        <div class="row g-2">
+                            @foreach (var permission in Model.PermissionCatalog)
+                            {
+                                var checkboxId = $"perm-{role.Id}-{permission.Code}";
+                                var isChecked = current.Contains(permission.Code);
+                                <div class="col-sm-6">
+                                    <div class="form-check">
+                                        @if (isChecked)
+                                        {
+                                            <input class="form-check-input" type="checkbox" name="permissionCodes" value="@permission.Code" id="@checkboxId" checked />
+                                        }
+                                        else
+                                        {
+                                            <input class="form-check-input" type="checkbox" name="permissionCodes" value="@permission.Code" id="@checkboxId" />
+                                        }
+                                        <label class="form-check-label small" for="@checkboxId">@permission.Description</label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Thêm tài khoản -->
+<div class="modal fade" id="newAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form method="post" asp-page-handler="CreateAccount">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-person-plus-fill text-primary me-2"></i>Thêm tài khoản mới
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Họ tên</label>
+                        <input class="form-control rounded-3" name="fullName" placeholder="Nguyễn Văn A" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Số điện thoại</label>
+                        <input class="form-control rounded-3" name="phone" placeholder="0912345678" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Email <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control rounded-3" name="email" placeholder="user@gmail.com" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Mật khẩu <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control rounded-3" name="password" placeholder="Tối thiểu 6 ký tự..." required minlength="6" />
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label small fw-semibold text-secondary">Vai trò ban đầu</label>
+                        <select class="form-select rounded-3" name="roleId">
+                            @foreach (var role in Model.Roles)
+                            {
+                                <option value="@role.Id">@role.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-dark rounded-pill px-4">Tạo tài khoản</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

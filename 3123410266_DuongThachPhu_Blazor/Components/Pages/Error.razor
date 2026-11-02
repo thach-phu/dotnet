@@ -1,0 +1,43 @@
+@page "/Error"
+@using System.Diagnostics
+@layout MainLayout
+
+<PageTitle>Sự cố hệ thống - Phú Store</PageTitle>
+
+<div class="empty-results-box" style="margin: 5rem auto; max-width: 600px; padding: 4rem 2rem;">
+    <div class="empty-icon" style="font-size: 5rem;">⚠️</div>
+    <span class="eyebrow-accent text-danger">SỰ CỐ HỆ THỐNG</span>
+    <h1 style="font-size: 2.2rem; font-weight: 800; margin: 0.8rem 0;">Đã Xảy Ra Lỗi Xử Lý</h1>
+    <p style="color: #64748b; font-size: 1rem; line-height: 1.6; margin-bottom: 2rem;">
+        Hệ thống gặp sự cố ngoài dự kiến trong khi tải dữ liệu. Vui lòng thử lại sau vài giây hoặc quay lại trang chủ.
+    </p>
+
+    @if (ShowRequestId)
+    {
+        <div style="background: #f1f5f9; padding: 0.75rem 1rem; border-radius: 12px; margin-bottom: 2rem; font-size: 0.85rem; color: #475569;">
+            <span>Mã theo dõi yêu cầu (Request ID): </span>
+            <code style="color: #ef4444; font-weight: 700;">@RequestId</code>
+        </div>
+    }
+
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a class="btn-apple-primary" href="/">
+            <span>Về Trang Chủ</span>
+            <span>→</span>
+        </a>
+        <a class="btn-apple-secondary" href="/products">
+            <span>Khám Phá iPhone</span>
+        </a>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

@@ -1,0 +1,213 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Phú Store - Đại lý iPhone chính hãng Apple VN/A</PageTitle>
+
+<!-- Hero Section -->
+<section class="hero-banner">
+    <div class="hero-content">
+        <div class="hero-tag">
+            <span class="apple-sym"></span> SẢN PHẨM MỚI NHẤT 2026
+        </div>
+        <h1 class="hero-title">
+            iPhone 16 Pro Max<br />
+            <span class="gradient-text">Titanium Sa Mạc.</span>
+        </h1>
+        <p class="hero-subtitle">
+            Thiết kế Titanium bền nhẹ đẳng cấp. Sức mạnh vượt bậc từ chip A18 Pro, nút điều khiển Camera Control đột phá cùng trí tuệ nhân tạo Apple Intelligence.
+        </p>
+        <div class="hero-actions">
+            <a class="btn-apple-primary" href="/products/1603">
+                <span>Khám phá ngay</span>
+                <span class="arrow-icon">→</span>
+            </a>
+            <a class="btn-apple-secondary" href="/products">
+                <span>Xem tất cả iPhone</span>
+            </a>
+        </div>
+        <div class="hero-trust-badges">
+            <span class="trust-badge">⚡ Giao nhanh 2h</span>
+            <span class="trust-badge">🛡️ Bảo hành 12T 1 đổi 1</span>
+            <span class="trust-badge">💳 Trả góp 0%</span>
+        </div>
+    </div>
+    <div class="hero-media">
+        <div class="hero-media-card">
+            <img src="https://media-asset.cellphones.com.vn/dashboard-v2/uploads/content-uploads/dien-thoai-iphone-16-pro-max-256gb-410296.jpg" 
+                 alt="iPhone 16 Pro Max" 
+                 class="hero-img" />
+            <div class="floating-badge hero-badge-price">
+                <span class="badge-label">Giá chỉ từ</span>
+                <strong class="badge-price">30.990.000₫</strong>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Trust Features Banner -->
+<section class="features-bar">
+    <div class="feature-item">
+        <div class="feature-icon">🛡️</div>
+        <div class="feature-info">
+            <h4>100% Chính Hãng VN/A</h4>
+            <p>Nguyên seal chưa kích hoạt, nguồn gốc Apple</p>
+        </div>
+    </div>
+    <div class="feature-item">
+        <div class="feature-icon">🚚</div>
+        <div class="feature-info">
+            <h4>Miễn Phí Vận Chuyển</h4>
+            <p>Giao hàng toàn quốc nhanh chóng, an toàn</p>
+        </div>
+    </div>
+    <div class="feature-item">
+        <div class="feature-icon">🔄</div>
+        <div class="feature-info">
+            <h4>1 Đổi 1 Trong 30 Ngày</h4>
+            <p>Lỗi nhà sản xuất là đổi mới ngay lập tức</p>
+        </div>
+    </div>
+    <div class="feature-item">
+        <div class="feature-icon">💳</div>
+        <div class="feature-info">
+            <h4>Trả Góp 0% Lãi Suất</h4>
+            <p>Thủ tục xét duyệt online chỉ 5 phút</p>
+        </div>
+    </div>
+</section>
+
+<!-- Series Quick Category Selector -->
+<section class="store-section">
+    <div class="section-title-wrap">
+        <div>
+            <span class="section-eyebrow">DANH MỤC THIẾT BỊ</span>
+            <h2 class="section-title">Chọn Dòng iPhone Bạn Thích</h2>
+        </div>
+        <a class="section-more-link" href="/products">Xem kho hàng <span>→</span></a>
+    </div>
+
+    <div class="category-cards-grid">
+        <a class="category-card" href="/products">
+            <span class="cat-pill">Mới nhất</span>
+            <h3>iPhone 16 Series</h3>
+            <p>A18 Pro • Camera Control • AI</p>
+            <span class="cat-action">Xem ngay →</span>
+        </a>
+        <a class="category-card" href="/products">
+            <span class="cat-pill popular">Bán chạy</span>
+            <h3>iPhone 15 Series</h3>
+            <p>Titanium • Dynamic Island • Type-C</p>
+            <span class="cat-action">Xem ngay →</span>
+        </a>
+        <a class="category-card" href="/products">
+            <span class="cat-pill value">Giá tốt</span>
+            <h3>iPhone 14 Series</h3>
+            <p>Màn hình OLED • Camera 48MP</p>
+            <span class="cat-action">Xem ngay →</span>
+        </a>
+        <a class="category-card" href="/products">
+            <span class="cat-pill budget">Quốc dân</span>
+            <h3>iPhone 13 & 12 Series</h3>
+            <p>Bền bỉ • Pin khỏe • Giá cực mềm</p>
+            <span class="cat-action">Xem ngay →</span>
+        </a>
+    </div>
+</section>
+
+<!-- Popular Hot Deals Section -->
+<section class="store-section">
+    <div class="section-title-wrap">
+        <div>
+            <span class="section-eyebrow hot-tag">🔥 SIÊU ƯU ĐÃI</span>
+            <h2 class="section-title">iPhone Nổi Bật Bán Chạy Nhất</h2>
+        </div>
+        <a class="section-more-link" href="/products">Xem tất cả @Catalog.Products.Count sản phẩm <span>→</span></a>
+    </div>
+
+    <div class="product-grid">
+        @foreach (var product in PopularProducts)
+        {
+            <article class="product-card">
+                <div class="card-badge-wrap">
+                    <span class="badge-hot">🔥 NỔI BẬT</span>
+                    <span class="badge-vna">VN/A</span>
+                </div>
+                <a class="card-img-link" href="@($"/products/{product.Id}")">
+                    <img src="@product.ImageUrl" alt="@product.Name" class="product-thumbnail" loading="lazy" />
+                    <span class="img-emoji-fallback">@product.Emoji</span>
+                </a>
+                <div class="card-body">
+                    <span class="product-cat-name">@product.Category</span>
+                    <h3 class="product-name">
+                        <a href="@($"/products/{product.Id}")">@product.Name</a>
+                    </h3>
+                    <p class="product-short-desc">@product.Description</p>
+                    <div class="product-price-row">
+                        <div class="price-stack">
+                            <span class="price-currency">Giá khuyến mãi</span>
+                            <strong class="current-price">@product.Price.ToString("N0")₫</strong>
+                        </div>
+                        <button class="btn-add-cart-circle" @onclick="() => AddToCart(product)" title="Thêm vào giỏ hàng" aria-label="Thêm vào giỏ">
+                            <span>+</span>
+                        </button>
+                    </div>
+                    <div class="card-footer-action">
+                        <a class="btn-view-detail" href="@($"/products/{product.Id}")">Xem chi tiết</a>
+                    </div>
+                </div>
+            </article>
+        }
+    </div>
+</section>
+
+<!-- Trade-in Promotion Banner -->
+<section class="promo-banner">
+    <div class="promo-banner-content">
+        <span class="promo-tag">CHƯƠNG TRÌNH ĐẶC BIỆT</span>
+        <h2>Thu Cũ Đổi Mới - Trợ Giá Đến 5.000.000₫</h2>
+        <p>Không phân biệt nguồn gốc máy, định giá nhanh trong 3 phút, bảo lưu dữ liệu trọn vẹn và hỗ trợ bù chênh lệch 0% lãi suất.</p>
+        <a class="btn-apple-primary" href="/products">
+            <span>Đổi máy mới ngay</span>
+            <span>→</span>
+        </a>
+    </div>
+</section>
+
+<!-- Toast notification -->
+@if (!string.IsNullOrEmpty(toastMessage))
+{
+    <div class="apple-toast" role="status">
+        <span class="toast-icon">✓</span>
+        <div class="toast-body">
+            <strong>Giỏ hàng</strong>
+            <span>@toastMessage</span>
+        </div>
+        <a class="toast-link" href="/cart">Xem giỏ →</a>
+    </div>
+}
+
+@code {
+    [Inject] private CartService Cart { get; set; } = default!;
+    [Inject] private ProductCatalog Catalog { get; set; } = default!;
+    private string? toastMessage;
+    private CancellationTokenSource? toastCts;
+
+    private IEnumerable<Product> PopularProducts =>
+        Catalog.Products.Where(p => p.IsPopular).Take(6);
+
+    private async Task AddToCart(Product product)
+    {
+        Cart.Add(product);
+        toastCts?.Cancel();
+        toastCts = new CancellationTokenSource();
+        var token = toastCts.Token;
+
+        toastMessage = $"Đã thêm {product.Name} vào giỏ hàng.";
+        try
+        {
+            await Task.Delay(2500, token);
+            toastMessage = null;
+        }
+        catch (TaskCanceledException) { }
+    }
+}

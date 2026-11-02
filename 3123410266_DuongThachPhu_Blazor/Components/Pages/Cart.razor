@@ -1,0 +1,513 @@
+@page "/cart"
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>Giỏ hàng & Đặt hàng - Phú Store</PageTitle>
+
+<div class="breadcrumb-nav">
+    <a href="/">Trang chủ</a>
+    <span class="sep">/</span>
+    <span class="current">Giỏ hàng của bạn</span>
+</div>
+
+@if (checkedOut && lastOrder is not null)
+{
+    <!-- SUCCESS ORDER RECEIPT SCREEN -->
+    <div class="checkout-success-container">
+        <div class="success-card">
+            <div class="success-header">
+                <div class="success-icon-badge">✓</div>
+                <span class="eyebrow-accent">ĐẶT HÀNG THÀNH CÔNG!</span>
+                <h1 class="success-title">Cảm ơn bạn đã mua sắm tại Phú Store</h1>
+                <p class="success-sub">
+                    Đơn hàng của bạn đã được ghi nhận vào hệ thống. Đội ngũ CSKH sẽ gọi điện xác nhận trong vòng 15 phút.
+                </p>
+            </div>
+
+            <div class="order-receipt-box">
+                <div class="receipt-header-row">
+                    <div>
+                        <span class="receipt-label">MÃ ĐƠN HÀNG</span>
+                        <strong class="receipt-code">#@lastOrder.OrderCode</strong>
+                    </div>
+                    <div class="text-end">
+                        <span class="receipt-label">NGÀY ĐẶT</span>
+                        <span class="receipt-date">@lastOrder.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <div class="receipt-info-grid">
+                    <div class="info-block">
+                        <span class="info-label">👤 Khách hàng:</span>
+                        <strong>@lastOrder.CustomerName</strong>
+                    </div>
+                    <div class="info-block">
+                        <span class="info-label">📞 Số điện thoại:</span>
+                        <strong>@lastOrder.CustomerPhone</strong>
+                    </div>
+                    <div class="info-block full-col">
+                        <span class="info-label">📍 Địa chỉ nhận hàng:</span>
+                        <span>@lastOrder.CustomerAddress</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(lastOrder.Note))
+                    {
+                        <div class="info-block full-col">
+                            <span class="info-label">📝 Ghi chú:</span>
+                            <span class="font-italic">@lastOrder.Note</span>
+                        </div>
+                    }
+                    <div class="info-block">
+                        <span class="info-label">💳 Hình thức thanh toán:</span>
+                        <span>@paymentMethod</span>
+                    </div>
+                    <div class="info-block">
+                        <span class="info-label">📦 Trạng thái:</span>
+                        <span class="badge-status-pending">Chờ xác nhận</span>
+                    </div>
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <h4 class="receipt-items-heading">Chi tiết sản phẩm đã mua:</h4>
+                <div class="receipt-items-list">
+                    @foreach (var item in lastOrder.Items)
+                    {
+                        <div class="receipt-item-row">
+                            <div class="receipt-item-img">
+                                <img src="@item.ImageUrl" alt="" />
+                            </div>
+                            <div class="receipt-item-name">
+                                <strong>@item.ProductName</strong>
+                                <small>Số lượng: @item.Quantity</small>
+                            </div>
+                            <div class="receipt-item-price">
+                                @((item.Price * item.Quantity).ToString("N0"))₫
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <div class="receipt-totals">
+                    <div class="total-line">
+                        <span>Tạm tính:</span>
+                        <span>@lastOrder.SubTotal.ToString("N0")₫</span>
+                    </div>
+                    @if (discountAmount > 0)
+                    {
+                        <div class="total-line discount-line">
+                            <span>Giảm giá khuyến mãi:</span>
+                            <span>-@discountAmount.ToString("N0")₫</span>
+                        </div>
+                    }
+                    <div class="total-line">
+                        <span>Phí vận chuyển:</span>
+                        <span class="text-free">Miễn phí toàn quốc</span>
+                    </div>
+                    <div class="total-line final-total">
+                        <strong>Tổng cộng thanh toán:</strong>
+                        <strong class="grand-price">@lastOrder.GrandTotal.ToString("N0")₫</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="success-actions">
+                <a class="btn-apple-primary" href="/products">
+                    <span>Tiếp tục mua sắm</span>
+                    <span>→</span>
+                </a>
+                <a class="btn-apple-secondary" href="/">
+                    <span>Về trang chủ</span>
+                </a>
+            </div>
+        </div>
+    </div>
+}
+else if (CartState.Items.Count == 0)
+{
+    <!-- EMPTY CART SCREEN -->
+    <div class="empty-results-box cart-empty-box">
+        <div class="empty-icon">🛒</div>
+        <h2>Giỏ hàng của bạn đang trống</h2>
+        <p>Hiện chưa có sản phẩm nào trong giỏ hàng. Hãy khám phá các mẫu iPhone mới nhất và chọn cho mình sản phẩm ưng ý.</p>
+        <a class="btn-apple-primary" href="/products">
+            <span>Mua sắm ngay bây giờ</span>
+            <span>→</span>
+        </a>
+    </div>
+}
+else
+{
+    <!-- CART WITH ITEMS -->
+    <div class="page-header-wrap">
+        <span class="section-eyebrow">GIỎ HÀNG</span>
+        <h1 class="page-title">Giỏ Hàng Của Bạn (@CartState.ItemCount món)</h1>
+    </div>
+
+    <div class="cart-two-col-layout">
+        <!-- Left: Cart Items List -->
+        <div class="cart-items-column">
+            <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4 mb-3">
+                <div class="d-flex align-items-center gap-2 text-success fw-bold small mb-2">
+                    <span>⚡</span>
+                    <span>Đơn hàng của bạn đủ điều kiện nhận <b>Miễn Phí Vận Chuyển Hỏa Tốc</b> toàn quốc!</span>
+                </div>
+                <div class="progress rounded-pill bg-success bg-opacity-25" style="height: 6px;">
+                    <div class="progress-bar bg-success" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <div class="cart-items-card">
+                @foreach (var item in CartState.Items)
+                {
+                    <div class="cart-product-row">
+                        <a class="cart-thumb-wrap" href="@($"/products/{item.Product.Id}")">
+                            <img src="@item.Product.ImageUrl" alt="@item.Product.Name" />
+                            <span class="img-emoji-fallback">@item.Product.Emoji</span>
+                        </a>
+
+                        <div class="cart-product-details">
+                            <span class="cart-category">@item.Product.Category</span>
+                            <h3 class="cart-name">
+                                <a href="@($"/products/{item.Product.Id}")">@item.Product.Name</a>
+                            </h3>
+                            <div class="cart-unit-price">@item.Product.Price.ToString("N0")₫ / máy</div>
+                        </div>
+
+                        <div class="cart-qty-wrapper">
+                            <div class="qty-control-box compact">
+                                <button class="qty-btn" @onclick="() => CartState.Remove(item.Product)" title="Giảm số lượng">−</button>
+                                <span class="qty-val">@item.Quantity</span>
+                                <button class="qty-btn" @onclick="() => CartState.Add(item.Product, 1)" title="Tăng số lượng">+</button>
+                            </div>
+                        </div>
+
+                        <div class="cart-line-total">
+                            <strong>@((item.Product.Price * item.Quantity).ToString("N0"))₫</strong>
+                        </div>
+
+                        <button class="cart-btn-delete" @onclick="() => CartState.RemoveItem(item.Product.Id)" title="Xóa khỏi giỏ" aria-label="Xóa">
+                            ✕
+                        </button>
+                    </div>
+                }
+
+                <div class="cart-items-footer">
+                    <button class="btn-clear-cart" @onclick="ClearCartConfirm">
+                        🗑️ Xóa toàn bộ giỏ hàng
+                    </button>
+                    <a class="btn-continue-shopping" href="/products">
+                        ← Tiếp tục chọn thêm sản phẩm
+                    </a>
+                </div>
+            </div>
+
+            <!-- Discount Voucher Section -->
+            <div class="voucher-box">
+                <span class="voucher-icon">🏷️</span>
+                <div class="voucher-input-group">
+                    <input type="text" 
+                           placeholder="Nhập mã ưu đãi (Thử mã: APPLEVN)" 
+                           @bind="couponCode" 
+                           class="voucher-input" />
+                    <button class="btn-apply-voucher" @onclick="ApplyVoucher">Áp dụng</button>
+                </div>
+                @if (!string.IsNullOrEmpty(voucherMessage))
+                {
+                    <div class="voucher-msg @(isVoucherValid ? "valid" : "invalid")">
+                        @voucherMessage
+                    </div>
+                }
+            </div>
+
+            <!-- Checkout Form Section -->
+            <div class="checkout-form-card" id="checkout-section">
+                <div class="card-heading-box">
+                    <span class="eyebrow-accent">BƯỚC THANH TOÁN</span>
+                    <h2>Thông Tin Người Nhận & Giao Hàng</h2>
+                    <p>Vui lòng điền thông tin chính xác để nhân viên giao hàng đúng địa chỉ.</p>
+                </div>
+
+                <EditForm Model="orderInput" OnValidSubmit="HandlePlaceOrder">
+                    <DataAnnotationsValidator />
+
+                    <div class="form-fields-grid">
+                        <div class="form-field full-row">
+                            <label>Họ và tên người nhận <span class="req">*</span></label>
+                            <InputText @bind-Value="orderInput.Name" placeholder="Ví dụ: Nguyễn Văn A" class="form-ctrl" />
+                            <ValidationMessage For="@(() => orderInput.Name)" class="val-err" />
+                        </div>
+
+                        <div class="form-field">
+                            <label>Số điện thoại liên hệ <span class="req">*</span></label>
+                            <InputText @bind-Value="orderInput.Phone" placeholder="Ví dụ: 0987654321" class="form-ctrl" />
+                            <ValidationMessage For="@(() => orderInput.Phone)" class="val-err" />
+                        </div>
+
+                        <div class="form-field">
+                            <label>Địa chỉ nhận hàng (Số nhà, tên đường, phường/xã, quận/huyện) <span class="req">*</span></label>
+                            <InputText @bind-Value="orderInput.Address" placeholder="Ví dụ: 45 Lê Lợi, P. Bến Nghé, Quận 1, TP.HCM" class="form-ctrl" />
+                            <ValidationMessage For="@(() => orderInput.Address)" class="val-err" />
+                        </div>
+
+                        <div class="form-field full-row">
+                            <label>Ghi chú đơn hàng (Tùy chọn)</label>
+                            <InputText @bind-Value="orderInput.Note" placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi đến..." class="form-ctrl" />
+                        </div>
+                    </div>
+
+                    <!-- Payment methods selector -->
+                    <div class="payment-method-selector">
+                        <label class="section-sub-label">Phương thức thanh toán:</label>
+                        <div class="payment-options">
+                            <label class="payment-radio-card @(paymentMethod == "COD" ? "selected" : "")">
+                                <input type="radio" name="paymentMethod" value="COD" checked="@(paymentMethod == "COD")" @onchange="@(() => paymentMethod = "COD")" />
+                                <div>
+                                    <strong>💵 Thanh toán khi nhận hàng (COD)</strong>
+                                    <p>Kiểm tra máy nguyên seal trước khi thanh toán tiền mặt</p>
+                                </div>
+                            </label>
+
+                            <label class="payment-radio-card @(paymentMethod == "Banking" ? "selected" : "")">
+                                <input type="radio" name="paymentMethod" value="Banking" checked="@(paymentMethod == "Banking")" @onchange="@(() => paymentMethod = "Banking")" />
+                                <div>
+                                    <strong>🏦 Chuyển khoản VietQR (Miễn phí)</strong>
+                                    <p>Quét mã QR tiện lợi qua mọi ứng dụng ngân hàng</p>
+                                </div>
+                            </label>
+
+                            <label class="payment-radio-card @(paymentMethod == "Installment" ? "selected" : "")">
+                                <input type="radio" name="paymentMethod" value="Installment" checked="@(paymentMethod == "Installment")" @onchange="@(() => paymentMethod = "Installment")" />
+                                <div>
+                                    <strong>💳 Trả góp 0% lãi suất</strong>
+                                    <p>Hỗ trợ qua thẻ tín dụng Visa/Mastercard kỳ hạn 3 - 12 tháng</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    @if (showLoginPrompt)
+                    {
+                        <div class="login-error-alert" role="alert">
+                            <span>⚠️ Vui lòng đăng nhập để xác nhận đơn hàng.</span>
+                            <a href="/login?returnUrl=/cart">Đăng nhập</a>
+                            <a href="/register">Đăng ký tài khoản mới</a>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(checkoutError))
+                    {
+                        <div class="login-error-alert" role="alert">⚠️ @checkoutError</div>
+                    }
+
+                    <div class="checkout-submit-row">
+                        <button type="submit" class="btn-submit-order">
+                            <span>Xác Nhận Đặt Hàng · @CalculateGrandTotal().ToString("N0")₫</span>
+                            <span>→</span>
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+
+        <!-- Right: Order Summary Sidebar -->
+        <div class="cart-summary-column">
+            <div class="summary-sticky-card">
+                <h2 class="summary-heading">Tóm Tắt Đơn Hàng</h2>
+
+                <div class="summary-breakdown">
+                    <div class="summary-line">
+                        <span>Tạm tính (@CartState.ItemCount sản phẩm):</span>
+                        <strong>@CartState.Total.ToString("N0")₫</strong>
+                    </div>
+
+                    @if (discountAmount > 0)
+                    {
+                        <div class="summary-line discount">
+                            <span>Voucher giảm giá (@appliedCode):</span>
+                            <strong>-@discountAmount.ToString("N0")₫</strong>
+                        </div>
+                    }
+
+                    <div class="summary-line">
+                        <span>Phí vận chuyển:</span>
+                        <strong class="text-free">Miễn phí toàn quốc</strong>
+                    </div>
+
+                    <div class="summary-line vat-included">
+                        <span>Thuế VAT:</span>
+                        <span>Đã bao gồm 10%</span>
+                    </div>
+
+                    <div class="summary-separator"></div>
+
+                    <div class="summary-line grand-total-line">
+                        <span>Tổng thanh toán:</span>
+                        <strong class="grand-total-val">@CalculateGrandTotal().ToString("N0")₫</strong>
+                    </div>
+                </div>
+
+                <div class="summary-guarantees">
+                    <div>🔒 Bảo mật thanh toán SSL 256-bit</div>
+                    <div>🛡️ 100% iPhone chính hãng VN/A nguyên seal</div>
+                    <div>⚡ Giao nhanh trong 2h tại khu vực nội thành</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private CartService CartState { get; set; } = default!;
+    [Inject] private OrderService OrderService { get; set; } = default!;
+    [Inject] private UserService UserService { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private bool checkedOut;
+    private bool showLoginPrompt;
+    private string? checkoutError;
+    private Order? lastOrder;
+    private OrderFormModel orderInput = new();
+    private string paymentMethod = "COD";
+    private string couponCode = "";
+    private string appliedCode = "";
+    private decimal discountAmount;
+    private string? voucherMessage;
+    private bool isVoucherValid;
+
+    protected override void OnInitialized()
+    {
+        CartState.Changed += HandleStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CartState.AttachAsync(JS);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateTask;
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            var idClaim = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (idClaim is not null && int.TryParse(idClaim, out var userId))
+            {
+                var user = UserService.GetById(userId);
+                if (user is not null)
+                {
+                    orderInput.Name = user.FullName;
+                    orderInput.Phone = user.PhoneNumber ?? "";
+                }
+            }
+        }
+    }
+
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        CartState.Changed -= HandleStateChanged;
+    }
+
+    private decimal CalculateGrandTotal()
+    {
+        var total = CartState.Total - discountAmount;
+        return total > 0 ? total : 0;
+    }
+
+    private void ApplyVoucher()
+    {
+        if (string.IsNullOrWhiteSpace(couponCode))
+        {
+            voucherMessage = "Vui lòng nhập mã ưu đãi.";
+            isVoucherValid = false;
+            return;
+        }
+
+        if (couponCode.Trim().Equals("APPLEVN", StringComparison.OrdinalIgnoreCase))
+        {
+            discountAmount = 500000;
+            appliedCode = "APPLEVN";
+            voucherMessage = "Áp dụng thành công! Giảm 500.000₫ vào đơn hàng.";
+            isVoucherValid = true;
+        }
+        else
+        {
+            voucherMessage = "Mã ưu đãi không hợp lệ hoặc đã hết hạn.";
+            isVoucherValid = false;
+        }
+    }
+
+    private void ClearCartConfirm()
+    {
+        CartState.Clear();
+        discountAmount = 0;
+        appliedCode = "";
+    }
+
+    private async Task HandlePlaceOrder()
+    {
+        if (CartState.Items.Count == 0) return;
+
+        var authState = await AuthStateTask;
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            showLoginPrompt = true;
+            return;
+        }
+
+        showLoginPrompt = false;
+        checkoutError = null;
+        var userIdClaim = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = int.TryParse(userIdClaim, out var parsedUserId) ? parsedUserId : (int?)null;
+
+        // Persist the order in the MySQL database
+        var result = OrderService.TryCreateOrder(
+            orderInput.Name,
+            orderInput.Phone,
+            orderInput.Address,
+            orderInput.Note,
+            CartState.Items,
+            shippingFee: 0,
+            discount: discountAmount,
+            userId: userId);
+
+        if (!result.Success)
+        {
+            checkoutError = result.Error;
+            return;
+        }
+
+        lastOrder = result.Order;
+        checkedOut = true;
+
+        // Clear cart now that order is safely saved!
+        CartState.Clear();
+    }
+
+    private sealed class OrderFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập họ và tên của bạn.")]
+        [System.ComponentModel.DataAnnotations.MinLength(2, ErrorMessage = "Họ tên cần tối thiểu 2 ký tự.")]
+        public string Name { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
+        [System.ComponentModel.DataAnnotations.RegularExpression(@"^0[0-9]{9,10}$", ErrorMessage = "Số điện thoại không đúng định dạng (Ví dụ: 0987654321).")]
+        public string Phone { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập địa chỉ nhận hàng.")]
+        [System.ComponentModel.DataAnnotations.MinLength(5, ErrorMessage = "Vui lòng nhập đầy đủ địa chỉ chi tiết.")]
+        public string Address { get; set; } = "";
+
+        public string? Note { get; set; }
+    }
+}

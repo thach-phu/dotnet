@@ -1,0 +1,136 @@
+@page "/register"
+
+<PageTitle>Đăng ký tài khoản - Phú Store</PageTitle>
+
+<div class="login-page-container">
+    <div class="login-box-card">
+        <a class="login-back-home" href="/">
+            ← Quay lại trang chủ
+        </a>
+
+        <div class="login-header-section">
+            <div class="login-brand-logo">
+                <span class="apple-symbol"></span>
+                <span class="brand-title">Phú Store</span>
+            </div>
+            <h1 class="login-main-title">Đăng Ký Tài Khoản</h1>
+            <p class="login-subtext">Tạo tài khoản để mua sắm và theo dõi đơn hàng tại Phú Store.</p>
+        </div>
+
+        <EditForm Model="Input" FormName="register" OnValidSubmit="HandleRegister">
+            <DataAnnotationsValidator />
+
+            <div class="login-form-fields">
+                <div class="login-field-item">
+                    <label>Họ và tên</label>
+                    <div class="login-input-icon-wrap">
+                        <span class="field-icon">👤</span>
+                        <InputText @bind-Value="Input.FullName" class="login-input" />
+                    </div>
+                    <ValidationMessage For="@(() => Input.FullName)" class="val-err" />
+                </div>
+
+                <div class="login-field-item">
+                    <label>Số điện thoại</label>
+                    <div class="login-input-icon-wrap">
+                        <span class="field-icon">📞</span>
+                        <InputText @bind-Value="Input.Phone" placeholder="Ví dụ: 0987654321" class="login-input" />
+                    </div>
+                    <ValidationMessage For="@(() => Input.Phone)" class="val-err" />
+                </div>
+
+                <div class="login-field-item">
+                    <label>Email</label>
+                    <div class="login-input-icon-wrap">
+                        <span class="field-icon">✉</span>
+                        <InputText @bind-Value="Input.Email" class="login-input" />
+                    </div>
+                    <ValidationMessage For="@(() => Input.Email)" class="val-err" />
+                </div>
+
+                <div class="login-field-item">
+                    <label>Mật khẩu</label>
+                    <div class="login-input-icon-wrap">
+                        <span class="field-icon">🔒</span>
+                        <InputText type="password" @bind-Value="Input.Password" class="login-input" />
+                    </div>
+                    <ValidationMessage For="@(() => Input.Password)" class="val-err" />
+                </div>
+
+                <div class="login-field-item">
+                    <label>Nhập lại mật khẩu</label>
+                    <div class="login-input-icon-wrap">
+                        <span class="field-icon">🔒</span>
+                        <InputText type="password" @bind-Value="Input.ConfirmPassword" class="login-input" />
+                    </div>
+                    <ValidationMessage For="@(() => Input.ConfirmPassword)" class="val-err" />
+                </div>
+
+                @if (errorMessage is not null)
+                {
+                    <div class="login-error-alert" role="alert">
+                        <span>⚠️ @errorMessage</span>
+                    </div>
+                }
+
+                <button type="submit" class="btn-login-submit">
+                    <span>Đăng ký</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </EditForm>
+
+        <div class="login-demo-helper">
+            <p>Đã có tài khoản? <a href="/login">Đăng nhập</a></p>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext HttpContext { get; set; } = default!;
+    [SupplyParameterFromForm] private InputModel Input { get; set; } = default!;
+
+    [Inject] private UserService UserService { get; set; } = default!;
+    [Inject] private IUserClaimsPrincipalFactory<User> ClaimsFactory { get; set; } = default!;
+
+    private string? errorMessage;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private async Task HandleRegister()
+    {
+        var (success, error, user) = await UserService.RegisterAsync(Input.FullName, Input.Phone, Input.Email, Input.Password);
+        if (!success)
+        {
+            errorMessage = error;
+            return;
+        }
+
+        var principal = await ClaimsFactory.CreateAsync(user!);
+        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal);
+        HttpContext.Response.Redirect("/");
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập họ và tên.")]
+        [MinLength(2, ErrorMessage = "Họ tên cần tối thiểu 2 ký tự.")]
+        public string FullName { get; set; } = "";
+
+        [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
+        [RegularExpression(@"^0[0-9]{9,10}$", ErrorMessage = "Số điện thoại không đúng định dạng (Ví dụ: 0987654321).")]
+        public string Phone { get; set; } = "";
+
+        [Required(ErrorMessage = "Vui lòng nhập email.")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
+        [MinLength(8, ErrorMessage = "Mật khẩu cần tối thiểu 8 ký tự.")]
+        public string Password { get; set; } = "";
+
+        [Required(ErrorMessage = "Vui lòng nhập lại mật khẩu.")]
+        [Compare(nameof(Password), ErrorMessage = "Mật khẩu nhập lại không khớp.")]
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

@@ -1,0 +1,102 @@
+@model MVC.Models.Order
+@{
+    ViewData["Title"] = $"Đơn hàng #{Model.OrderCode} - Phú Store";
+}
+
+<div class="breadcrumb-nav">
+    <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+    <span class="sep">/</span>
+    <a asp-controller="Account" asp-action="Orders">Lịch sử đơn hàng</a>
+    <span class="sep">/</span>
+    <span class="current">#@Model.OrderCode</span>
+</div>
+
+<div class="page-heading mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <span class="eyebrow text-primary fw-bold small text-uppercase">CHI TIẾT ĐƠN HÀNG</span>
+        <h1 class="page-title fs-2 fw-bold mt-1">#@Model.OrderCode</h1>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3" onclick="window.print();">
+            <i class="bi bi-printer me-1"></i>In đơn hàng
+        </button>
+        <a asp-action="Orders" class="btn btn-sm btn-outline-secondary rounded-pill px-3">← Quay lại danh sách</a>
+    </div>
+</div>
+
+<div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+    <div class="row g-3 pb-3 border-bottom small">
+        <div class="col-md-6">
+            <span class="text-muted d-block">Người nhận hàng:</span>
+            <strong>@Model.CustomerName (@Model.CustomerPhone)</strong>
+        </div>
+        <div class="col-md-6">
+            <span class="text-muted d-block">Ngày đặt:</span>
+            <strong>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</strong>
+        </div>
+        <div class="col-12">
+            <span class="text-muted d-block">Địa chỉ giao:</span>
+            <span>@Model.CustomerAddress</span>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.Note))
+        {
+            <div class="col-12">
+                <span class="text-muted d-block">Ghi chú:</span>
+                <span class="fst-italic">@Model.Note</span>
+            </div>
+        }
+    </div>
+
+    <div class="table-responsive mt-3">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="small text-muted">
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th class="text-center">Số lượng</th>
+                    <th class="text-end">Đơn giá</th>
+                    <th class="text-end">Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.ProductName</td>
+                        <td class="text-center">@item.Quantity</td>
+                        <td class="text-end">@item.Price.ToString("N0")₫</td>
+                        <td class="text-end fw-bold">@((item.Price * item.Quantity).ToString("N0"))₫</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-end text-muted small">Phí vận chuyển:</td>
+                    <td class="text-end text-success fw-bold small">
+                        @(Model.ShippingFee == 0 ? "Miễn phí" : $"{Model.ShippingFee:N0}₫")
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end fw-bold">Tổng cộng:</td>
+                    <td class="text-end fw-bold text-danger">@Model.GrandTotal.ToString("N0")₫</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="mt-3 mb-2">
+        <partial name="_OrderStatusPipeline" model="Model.Status" />
+    </div>
+
+    @if (Model.Status == "Chờ xác nhận")
+    {
+        <div class="text-end pt-3 border-top">
+            <form asp-action="CancelOrder" method="post" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="orderId" value="@Model.Id" />
+                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                    ✕ Hủy đơn hàng này
+                </button>
+            </form>
+        </div>
+    }
+</div>

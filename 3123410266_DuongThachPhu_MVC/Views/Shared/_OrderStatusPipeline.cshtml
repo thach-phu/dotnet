@@ -1,0 +1,32 @@
+@model string
+@{
+    var stages = new (string Label, string Icon)[]
+    {
+        ("Chờ xác nhận", "📝"),
+        ("Đã xác nhận", "📦"),
+        ("Đang giao", "🚚"),
+        ("Đã giao", "🏠"),
+    };
+    var currentIndex = Array.FindIndex(stages, s => s.Label == Model);
+}
+
+@if (Model == "Đã hủy")
+{
+    <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill fw-bold">Đơn hàng đã bị hủy</span>
+}
+else
+{
+    <div class="order-status-timeline">
+        @for (var i = 0; i < stages.Length; i++)
+        {
+            var reached = currentIndex >= i;
+            var isCurrent = currentIndex == i;
+            var stepClass = isCurrent ? "current" : (reached ? "completed" : "upcoming");
+            <div class="timeline-step @stepClass">
+                <div class="timeline-step-connector"></div>
+                <div class="timeline-step-circle">@(reached && !isCurrent ? "✓" : stages[i].Icon)</div>
+                <span class="timeline-step-label">@stages[i].Label</span>
+            </div>
+        }
+    </div>
+}

@@ -1,0 +1,158 @@
+@page "{id}"
+@model AspRazorPageProduct.Pages.Admin.Orders.DetailsModel
+@{
+    ViewData["Title"] = $"Đơn hàng #{Model.Order.OrderId} - TechStore Admin";
+}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-page="/Index" class="text-decoration-none text-muted">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a asp-page="/Admin/Orders/Index" class="text-decoration-none text-muted">Quản trị đơn hàng</a></li>
+        <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Đơn #@Model.Order.OrderId</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <span class="badge bg-primary-subtle text-primary fw-bold text-uppercase px-3 py-1 mb-1">CHI TIẾT ĐƠN HÀNG</span>
+        <h4 class="fw-bold mb-0">Đơn hàng <span class="font-monospace text-primary">#@Model.Order.OrderId</span></h4>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-page="/Admin/Orders/Index" class="btn btn-outline-secondary rounded-pill px-3 py-1 small">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+        </a>
+        <button type="button" class="btn btn-outline-dark rounded-pill px-3 py-1 small" onclick="window.print();">
+            <i class="bi bi-printer me-1"></i>In đơn hàng
+        </button>
+    </div>
+</div>
+
+@if (TempData["OrderSuccess"] is string successMessage)
+{
+    <div class="alert alert-success rounded-3 mb-4 py-2 px-3 small">
+        <i class="bi bi-check-circle-fill me-1"></i>@successMessage
+    </div>
+}
+@if (TempData["OrderError"] is string errorMessage)
+{
+    <div class="alert alert-danger rounded-3 mb-4 py-2 px-3 small">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>@errorMessage
+    </div>
+}
+
+<div class="card border-0 rounded-4 shadow-sm bg-white p-4 p-md-5 mb-4">
+    <div class="row g-4 pb-4 border-bottom">
+        <div class="col-md-4">
+            <div class="p-3 bg-light rounded-3 h-100 border">
+                <span class="text-muted small fw-bold text-uppercase d-block mb-1">
+                    <i class="bi bi-person-fill text-primary me-1"></i>Thông Tin Khách Hàng
+                </span>
+                <strong class="d-block fs-6 text-dark">@Model.Order.CustomerName</strong>
+                <span class="text-muted small d-block"><i class="bi bi-telephone me-1"></i>@Model.Order.CustomerPhone</span>
+                <span class="badge bg-secondary-subtle text-secondary mt-2">Thanh toán: @Model.Order.PaymentMethod</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-light rounded-3 h-100 border">
+                <span class="text-muted small fw-bold text-uppercase d-block mb-1">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>Địa Chỉ Giao Hàng
+                </span>
+                <p class="mb-1 text-dark small">@Model.Order.ShippingAddress</p>
+                @if (!string.IsNullOrEmpty(Model.Order.Notes))
+                {
+                    <span class="text-muted small fst-italic d-block mt-2">
+                        <i class="bi bi-chat-left-text me-1"></i>Ghi chú: @Model.Order.Notes
+                    </span>
+                }
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-light rounded-3 h-100 border">
+                <span class="text-muted small fw-bold text-uppercase d-block mb-1">
+                    <i class="bi bi-calendar-event text-success me-1"></i>Thời Gian &amp; Trạng Thái
+                </span>
+                <span class="text-muted small d-block">Ngày đặt:</span>
+                <strong class="text-dark">@Model.Order.OrderDate.ToString("dd/MM/yyyy HH:mm")</strong>
+                <div class="mt-2">
+                    <partial name="/Pages/Shared/_OrderStatusBadge.cshtml" model="Model.Order.Status" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items table -->
+    <h5 class="fw-bold fs-6 mt-4 mb-3">
+        <i class="bi bi-box-seam me-1 text-primary"></i>Danh sách thiết bị trong đơn:
+    </h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-muted text-uppercase">
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th class="text-center">Số lượng</th>
+                    <th class="text-end">Đơn giá</th>
+                    <th class="text-end">Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Order.Items)
+                {
+                    <tr>
+                        <td>
+                            <strong class="text-dark">@item.Product.Name</strong>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border px-2 py-1">@item.Quantity</span>
+                        </td>
+                        <td class="text-end text-muted font-monospace">@item.Product.Price.ToString("N0")₫</td>
+                        <td class="text-end fw-bold font-monospace">@item.TotalPrice.ToString("N0")₫</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-end text-muted small pt-3">Phí vận chuyển:</td>
+                    <td class="text-end text-success fw-bold small pt-3">Miễn phí</td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end fw-bold fs-6">Tổng giá trị thanh toán:</td>
+                    <td class="text-end fw-bold text-danger fs-5 font-monospace">@Model.Order.TotalAmount.ToString("N0")₫</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Timeline status -->
+    <div class="mt-4 pt-3 border-top">
+        <span class="text-muted small fw-bold text-uppercase d-block mb-2">Tiến độ giao dịch:</span>
+        <partial name="/Pages/Shared/_OrderStatusPipeline.cshtml" model="Model.Order.Status" />
+    </div>
+
+    <!-- Status Action Transition Form -->
+    <div class="mt-4 p-3 bg-light rounded-3 border">
+        @if (Model.ValidNextStatuses.Count > 0)
+        {
+            <form method="post" asp-page-handler="UpdateStatus" class="d-flex gap-2 align-items-center flex-wrap" onsubmit="return confirm('Bạn có chắc muốn lưu thay đổi trạng thái này? Hành động không thể hoàn tác.');">
+                <input type="hidden" name="orderId" value="@Model.Order.OrderId" />
+                <span class="small fw-bold text-secondary">Chuyển trạng thái đơn sang:</span>
+                <select name="status" class="form-select form-select-sm rounded-3" style="max-width: 260px;">
+                    @foreach (var status in Model.ValidNextStatuses)
+                    {
+                        <option value="@status">@status</option>
+                    }
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-check2-circle me-1"></i>Lưu trạng thái
+                </button>
+            </form>
+        }
+        else
+        {
+            <div class="d-flex align-items-center gap-2 text-muted small">
+                <i class="bi bi-info-circle"></i>
+                <span>Không có hành động chuyển trạng thái nào khả dụng cho đơn hàng này (Đơn đã hoàn tất hoặc đã hủy).</span>
+            </div>
+        }
+    </div>
+</div>

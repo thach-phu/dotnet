@@ -1,0 +1,119 @@
+@model MVC.Models.ProductListViewModel
+@{
+    ViewData["Title"] = "Bộ sưu tập iPhone - Phú Store";
+    var categories = ViewBag.Categories as IReadOnlyList<MVC.Models.Category> ?? [];
+}
+
+<div class="page-header-wrap">
+    <div class="breadcrumb-nav">
+        <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+        <span class="sep">/</span>
+        <span class="current">Tất cả sản phẩm iPhone</span>
+    </div>
+    <span class="section-eyebrow">DANH MỤC CHÍNH HÃNG VN/A</span>
+    <h1 class="page-title">Tất Cả Sản Phẩm iPhone</h1>
+    <p class="page-desc">
+        Khám phá toàn bộ các thế hệ iPhone chính hãng Apple với đầy đủ dung lượng và màu sắc. Bảo hành 12 tháng tại các trung tâm bảo hành Apple trên toàn quốc.
+    </p>
+</div>
+
+<!-- Toolbar: Search, Filters & Sorting -->
+<div class="catalog-control-panel mb-4">
+    <form method="get" asp-action="Index" class="catalog-form">
+        <!-- Top row: Search and sort -->
+        <div class="control-top-row">
+            <div class="search-input-wrapper">
+                <span class="search-lens">🔍</span>
+                <input name="search" value="@Model.Search" placeholder="Tìm kiếm iPhone 16, Pro Max, 128GB..." class="search-input" />
+                @if (!string.IsNullOrEmpty(Model.Search))
+                {
+                    <a asp-action="Index" asp-route-category="@Model.Category" class="clear-search-btn" title="Xóa tìm kiếm">✕</a>
+                }
+            </div>
+
+            <input type="hidden" name="category" value="@Model.Category" />
+
+            <div class="sort-control">
+                <button type="submit" class="btn-apple-primary py-2 px-4 fs-6">
+                    <span>Tìm kiếm</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Category selector pills -->
+        <div class="category-tabs-row mt-3">
+            <a asp-action="Index" asp-route-search="@Model.Search" 
+               class="cat-pill-btn @(string.IsNullOrEmpty(Model.Category) ? "active" : "")">
+                Tất cả
+            </a>
+            @foreach (var category in categories)
+            {
+                <a asp-action="Index" asp-route-category="@category.Name" asp-route-search="@Model.Search"
+                   class="cat-pill-btn @(string.Equals(Model.Category, category.Name, StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    @category.Name
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- Header info / counter -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-muted small">
+        Hiển thị <b>@Model.Products.Count</b> sản phẩm (Trang @Model.Page / @Model.TotalPages)
+    </span>
+    @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Category))
+    {
+        <a asp-action="Index" class="small text-danger text-decoration-none fw-semibold">
+            ✕ Bỏ lọc
+        </a>
+    }
+</div>
+
+@if (!Model.Products.Any())
+{
+    <div class="empty-results-box text-center py-5">
+        <div class="empty-icon fs-1">📦</div>
+        <h3 class="mt-3">Không tìm thấy sản phẩm phù hợp</h3>
+        <p class="text-muted">Vui lòng thử lại với từ khóa khác hoặc xóa bộ lọc danh mục.</p>
+        <a asp-action="Index" class="btn-apple-primary mt-2">
+            <span>Xem tất cả iPhone</span>
+        </a>
+    </div>
+}
+else
+{
+    <div class="product-grid">
+        @foreach (var product in Model.Products)
+        {
+            <partial name="_ProductCard" model="product" />
+        }
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-5" aria-label="Phân trang sản phẩm">
+            <ul class="pagination justify-content-center gap-1">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link rounded-pill px-3" asp-action="Index" asp-route-search="@Model.Search" asp-route-category="@Model.Category" asp-route-page="@(Model.Page - 1)">
+                        ← Trang trước
+                    </a>
+                </li>
+                @for (var p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link rounded-circle text-center mx-1" style="width: 40px; height: 40px; line-height: 24px;" 
+                           asp-action="Index" asp-route-search="@Model.Search" asp-route-category="@Model.Category" asp-route-page="@p">
+                            @p
+                        </a>
+                    </li>
+                }
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link rounded-pill px-3" asp-action="Index" asp-route-search="@Model.Search" asp-route-category="@Model.Category" asp-route-page="@(Model.Page + 1)">
+                        Trang sau →
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+}

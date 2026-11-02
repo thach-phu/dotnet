@@ -1,0 +1,45 @@
+@model MVC.Models.Product
+
+<article class="product-card">
+    <div class="card-badge-wrap">
+        @if (Model.IsPopular)
+        {
+            <span class="badge-hot">🔥 NỔI BẬT</span>
+        }
+        <span class="badge-vna">VN/A</span>
+    </div>
+    
+    <a class="card-img-link" asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id">
+        @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+        {
+            <img src="@Model.ImageUrl" alt="@Model.Name" class="product-thumbnail" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+        }
+        <span class="img-emoji-fallback" style="@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "display:block" : null)">@Model.Emoji</span>
+    </a>
+
+    <div class="card-body">
+        <span class="product-cat-name">@Model.Category</span>
+        <h3 class="product-name">
+            <a asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id">@Model.Name</a>
+        </h3>
+        <p class="product-short-desc">@Model.Description</p>
+        
+        <div class="product-price-row">
+            <div class="price-stack">
+                <span class="price-currency">Giá chính hãng</span>
+                <strong class="current-price">@Model.Price.ToString("N0")₫</strong>
+            </div>
+            <form asp-controller="Products" asp-action="AddToCart" method="post" class="m-0 p-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn-add-cart-circle" title="Thêm vào giỏ hàng" aria-label="Thêm @Model.Name vào giỏ hàng">
+                    <span>+</span>
+                </button>
+            </form>
+        </div>
+        
+        <div class="card-footer-action">
+            <a class="btn-view-detail" asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id">Xem chi tiết</a>
+        </div>
+    </div>
+</article>

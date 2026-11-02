@@ -1,0 +1,218 @@
+@page
+@model AspRazorPageProduct.Pages.Admin.Customers.IndexModel
+@{
+    ViewData["Title"] = "Quản Lý Khách Hàng - TechStore Admin";
+    var totalCustomers = Model.Customers.Count;
+    var linkedCount = Model.Customers.Count(c => c.LinkedEmail != null);
+}
+
+<!-- Admin Header Banner -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 p-4 rounded-4 bg-dark text-white shadow-sm">
+    <div>
+        <span class="badge bg-warning text-dark text-uppercase px-3 py-1 mb-2 fw-bold">QUẢN TRỊ KHÁCH HÀNG</span>
+        <h1 class="fs-3 fw-bold mb-1">Hồ Sơ Khách Hàng &amp; Liên Kết</h1>
+        <p class="text-white-50 small mb-0">Quản lý cơ sở dữ liệu khách hàng thân thiết và ánh xạ tài khoản hệ thống.</p>
+    </div>
+</div>
+
+@if (TempData["CustomerError"] is string errorMessage)
+{
+    <div class="alert alert-danger rounded-3 py-2 px-3 small mb-4">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>@errorMessage
+    </div>
+}
+@if (TempData["CustomerSuccess"] is string successMessage)
+{
+    <div class="alert alert-success rounded-3 py-2 px-3 small mb-4">
+        <i class="bi bi-check-circle-fill me-1"></i>@successMessage
+    </div>
+}
+
+<!-- Quick Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6">
+        <div class="p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-primary-subtle text-primary p-3 fs-4">
+                <i class="bi bi-person-heart"></i>
+            </div>
+            <div>
+                <span class="text-muted small d-block">Tổng số khách hàng</span>
+                <strong class="fs-4 text-dark">@totalCustomers khách hàng</strong>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <div class="p-3 bg-white rounded-4 border shadow-sm d-flex align-items-center gap-3">
+            <div class="rounded-3 bg-success-subtle text-success p-3 fs-4">
+                <i class="bi bi-link-45deg"></i>
+            </div>
+            <div>
+                <span class="text-muted small d-block">Đã liên kết tài khoản Email</span>
+                <strong class="fs-4 text-success">@linkedCount / @totalCustomers</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden mb-4">
+    <div class="card-header bg-white py-3 px-4 border-bottom">
+        <h5 class="fw-bold mb-0">
+            <i class="bi bi-person-plus-fill text-primary me-2"></i>Thêm khách hàng mới
+        </h5>
+    </div>
+    <div class="card-body p-4">
+        <form method="post" asp-page-handler="Create" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small fw-semibold text-secondary">Họ và tên khách hàng <span class="text-danger">*</span></label>
+                <input asp-for="FullName" class="form-control rounded-3" placeholder="Ví dụ: Nguyễn Văn An" required />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold text-secondary">Số điện thoại <span class="text-danger">*</span></label>
+                <input asp-for="Phone" class="form-control rounded-3" placeholder="0912345678" required />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-dark rounded-pill px-4 py-2 w-100 fw-semibold">
+                    <i class="bi bi-plus-lg me-1"></i>Thêm khách hàng
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden mb-5">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+            <i class="bi bi-people-fill text-warning me-2"></i>Danh sách khách hàng (@Model.Customers.Count)
+        </h5>
+        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">Hồ sơ khách</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-muted text-uppercase">
+                <tr>
+                    <th class="ps-4">Khách hàng</th>
+                    <th>Số điện thoại</th>
+                    <th>Liên kết tài khoản</th>
+                    <th>Thao tác liên kết</th>
+                    <th class="text-end pe-4">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Customers.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Chưa có khách hàng nào trong hệ thống.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var customer in Model.Customers)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-light border d-inline-flex align-items-center justify-content-center text-secondary fw-bold" style="width: 36px; height: 36px; font-size: 0.9rem;">
+                                        @(customer.FullName.Length > 0 ? customer.FullName[0].ToString().ToUpper() : "?")
+                                    </div>
+                                    <strong class="text-dark">@customer.FullName</strong>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="text-muted small"><i class="bi bi-telephone me-1"></i>@customer.Phone</span>
+                            </td>
+                            <td>
+                                @if (customer.LinkedEmail is not null)
+                                {
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Đã liên kết: @customer.LinkedEmail
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1">
+                                        <i class="bi bi-dash-circle me-1"></i>Chưa liên kết
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                @if (customer.LinkedEmail is null)
+                                {
+                                    <form method="post" asp-page-handler="Map" class="d-flex gap-2 align-items-center">
+                                        <input type="hidden" name="customerId" value="@customer.Id" />
+                                        <select name="userId" class="form-select form-select-sm rounded-3" style="max-width: 220px;">
+                                            @foreach (var user in Model.UnlinkedUsers)
+                                            {
+                                                <option value="@user.Id">@user.Email</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3" disabled="@(!Model.UnlinkedUsers.Any())">
+                                            <i class="bi bi-link-45deg me-1"></i>Map
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small fst-italic">Hoàn tất</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4 text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2"
+                                        data-bs-toggle="modal" data-bs-target="#editCustomerModal"
+                                        data-customer-id="@customer.Id" data-customer-name="@customer.FullName" data-customer-phone="@customer.Phone"
+                                        onclick="fillEditCustomerModal(this)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa khách hàng này?');">
+                                    <input type="hidden" name="customerId" value="@customer.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Sửa khách hàng -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+            <form method="post" asp-page-handler="Update">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Sửa khách hàng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editCustomerId" name="customerId" />
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Họ tên</label>
+                        <input class="form-control rounded-3" id="editCustomerName" name="fullName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Số điện thoại</label>
+                        <input class="form-control rounded-3" id="editCustomerPhone" name="phone" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-dark rounded-pill px-4">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function fillEditCustomerModal(btn) {
+        document.getElementById('editCustomerId').value = btn.dataset.customerId;
+        document.getElementById('editCustomerName').value = btn.dataset.customerName;
+        document.getElementById('editCustomerPhone').value = btn.dataset.customerPhone;
+    }
+</script>

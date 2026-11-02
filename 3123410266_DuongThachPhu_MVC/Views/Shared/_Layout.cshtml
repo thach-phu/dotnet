@@ -1,0 +1,253 @@
+@inject MVC.Services.SessionCart Cart
+@{
+    var cartItemsCount = 0;
+    try
+    {
+        cartItemsCount = Cart.GetCart().Items.Sum(i => i.Quantity);
+    }
+    catch { }
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Phú Store | Apple Authorised Reseller</title>
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Icons & Bootstrap 5 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/app.css" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="~/favicon.png" />
+</head>
+<body>
+    <div class="store-app-shell">
+        <!-- Top Announcement Bar -->
+        <div class="announcement-bar">
+            <div class="announcement-content">
+                <span>✨ <b>Phú Store</b> • Đại lý ủy quyền Apple chính hãng VN/A • Miễn phí vận chuyển toàn quốc cho mọi dòng iPhone • Hotline: 1800 6868</span>
+            </div>
+        </div>
+
+        <!-- Main Navigation Bar -->
+        <header class="store-navbar">
+            <div class="nav-container">
+                <a class="nav-brand" asp-controller="Home" asp-action="Index">
+                    <span class="brand-apple-icon"></span>
+                    <div class="brand-text">
+                        <span class="brand-name">Phú Store</span>
+                        <span class="brand-sub">Authorised Reseller</span>
+                    </div>
+                </a>
+
+                <!-- Desktop Navigation Links -->
+                <nav class="nav-links">
+                    <a class="nav-link-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" 
+                       asp-controller="Home" asp-action="Index">
+                        Trang chủ
+                    </a>
+                    <a class="nav-link-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")" 
+                       asp-controller="Products" asp-action="Index">
+                        Sản phẩm
+                    </a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a class="nav-link-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Orders" ? "active" : "")" 
+                           asp-controller="Account" asp-action="Orders">
+                            Đơn hàng của tôi
+                        </a>
+                    }
+                    @if (User.HasClaim(Permissions.ClaimType, Permissions.ProductsManage) || 
+                         User.HasClaim(Permissions.ClaimType, Permissions.OrdersManage) || 
+                         User.HasClaim(Permissions.ClaimType, Permissions.UsersManage))
+                    {
+                        <a class="nav-link-item nav-admin-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" ? "active" : "")" 
+                           asp-controller="Admin" asp-action="Index">
+                            <span class="nav-icon">⚙</span> Quản trị
+                        </a>
+                    }
+                </nav>
+
+                <!-- Right Actions -->
+                <div class="nav-actions">
+                    <a class="cart-pill-btn" asp-controller="Cart" asp-action="Index" title="Giỏ hàng">
+                        <span class="cart-icon">🛒</span>
+                        <span class="cart-label">Giỏ hàng</span>
+                        @if (cartItemsCount > 0)
+                        {
+                            <span class="cart-badge-count">@cartItemsCount</span>
+                        }
+                    </a>
+
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="user-pill">
+                            <span class="user-avatar">👤</span>
+                            <a asp-controller="Account" asp-action="Orders" class="user-name" title="Lịch sử đơn hàng">
+                                @(User.Identity.Name)
+                            </a>
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="logout-btn" title="Đăng xuất">↪</button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <a class="login-btn" asp-controller="Account" asp-action="Login" title="Đăng nhập tài khoản">
+                            <span>Đăng nhập</span>
+                        </a>
+                    }
+
+                    <button class="mobile-toggle-btn" type="button" id="mobileMenuToggle" aria-label="Mở menu">
+                        <span id="mobileMenuIcon">☰</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Navigation Drawer -->
+        <div id="mobileMenuBackdrop" class="mobile-menu-backdrop" style="display:none;" onclick="toggleMobileMenu()"></div>
+        <div id="mobileMenuDrawer" class="mobile-menu-drawer" style="display:none;">
+            <div class="mobile-menu-header">
+                <span class="brand-name"> Phú Store</span>
+                <button class="mobile-close-btn" type="button" onclick="toggleMobileMenu()">✕</button>
+            </div>
+            <div class="mobile-menu-links">
+                <a class="mobile-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" 
+                   asp-controller="Home" asp-action="Index">⌂ Trang chủ</a>
+                <a class="mobile-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")" 
+                   asp-controller="Products" asp-action="Index">📱 Sản phẩm</a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a class="mobile-nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Orders" ? "active" : "")" 
+                       asp-controller="Account" asp-action="Orders">📦 Đơn hàng của tôi</a>
+                }
+                @if (User.HasClaim(Permissions.ClaimType, Permissions.ProductsManage) || 
+                     User.HasClaim(Permissions.ClaimType, Permissions.OrdersManage) || 
+                     User.HasClaim(Permissions.ClaimType, Permissions.UsersManage))
+                {
+                    <a class="mobile-nav-link nav-admin-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" ? "active" : "")" 
+                       asp-controller="Admin" asp-action="Index">⚙ Quản trị hệ thống</a>
+                }
+                <a class="mobile-nav-link" asp-controller="Cart" asp-action="Index">🛒 Giỏ hàng (@cartItemsCount)</a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="mobile-menu-user-row p-3 border-top mt-2">
+                        <span class="fw-bold d-block mb-2">👤 @(User.Identity.Name)</span>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline m-0">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1">Đăng xuất</button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <a class="mobile-nav-link text-primary fw-bold" asp-controller="Account" asp-action="Login">🔑 Đăng nhập tài khoản</a>
+                }
+            </div>
+        </div>
+
+        <!-- Page Main Content -->
+        <main class="page-content-wrapper">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-4 mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-4 mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @RenderBody()
+        </main>
+
+        <!-- Professional Apple Reseller Footer -->
+        <footer class="store-footer">
+            <div class="footer-container">
+                <div class="footer-grid">
+                    <div class="footer-col brand-col">
+                        <div class="footer-brand">
+                            <span class="brand-apple-icon"></span>
+                            <span class="footer-brand-name">Phú Store</span>
+                        </div>
+                        <p class="footer-desc">
+                            Đại lý ủy quyền chính thức của Apple tại Việt Nam. Cung cấp sản phẩm iPhone chính hãng VN/A, bảo hành 12 tháng tại các trung tâm Apple Authorised Service Provider trên toàn quốc.
+                        </p>
+                        <div class="footer-badges">
+                            <span class="f-badge">✓ 100% Chính Hãng VN/A</span>
+                            <span class="f-badge">✓ 1 Đổi 1 Trong 30 Ngày</span>
+                        </div>
+                    </div>
+
+                    <div class="footer-col">
+                        <h4 class="footer-title">Dòng iPhone</h4>
+                        <ul class="footer-links">
+                            <li><a asp-controller="Products" asp-action="Index" asp-route-category="iPhone 16">iPhone 16 Series</a></li>
+                            <li><a asp-controller="Products" asp-action="Index" asp-route-category="iPhone 15">iPhone 15 Series</a></li>
+                            <li><a asp-controller="Products" asp-action="Index" asp-route-category="iPhone 14">iPhone 14 Series</a></li>
+                            <li><a asp-controller="Products" asp-action="Index" asp-route-category="iPhone 13">iPhone 13 Series</a></li>
+                            <li><a asp-controller="Products" asp-action="Index">iPhone Cũ Like New</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-col">
+                        <h4 class="footer-title">Chính Sách & Hỗ Trợ</h4>
+                        <ul class="footer-links">
+                            <li><a asp-controller="Products" asp-action="Index">Chính sách bảo hành Apple</a></li>
+                            <li><a asp-controller="Cart" asp-action="Index">Hướng dẫn mua hàng &amp; Thanh toán</a></li>
+                            <li><a asp-controller="Products" asp-action="Index">Chính sách giao hàng toàn quốc</a></li>
+                            <li><a asp-controller="Products" asp-action="Index">Thu cũ đổi mới - Trợ giá đến 5TR</a></li>
+                            <li><a asp-controller="Admin" asp-action="Index">Khu vực quản trị hệ thống</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="footer-col contact-col">
+                        <h4 class="footer-title">Liên Hệ & Cửa Hàng</h4>
+                        <ul class="footer-contact">
+                            <li><strong>📞 Hotline mua hàng:</strong> 1800 6868 (8:00 - 21:30)</li>
+                            <li><strong>🛠 Kỹ thuật &amp; Bảo hành:</strong> 1800 6869 (8:00 - 21:00)</li>
+                            <li><strong>📍 Showroom chính:</strong> 123 Đường Công Nghệ, Quận 1, TP. Hồ Chí Minh</li>
+                            <li><strong>📧 Email:</strong> support@phustore.vn</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <p>© 2026 Phú Store - Apple Authorised Reseller. Tất cả quyền được bảo lưu.</p>
+                    <div class="footer-payment-icons">
+                        <span>💵 COD</span>
+                        <span>💳 Visa / Mastercard</span>
+                        <span>🏦 Chuyển khoản QR</span>
+                        <span>📱 Apple Pay</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleMobileMenu() {
+            var drawer = document.getElementById('mobileMenuDrawer');
+            var backdrop = document.getElementById('mobileMenuBackdrop');
+            if (!drawer || !backdrop) return;
+            var isHidden = drawer.style.display === 'none';
+            drawer.style.display = isHidden ? 'block' : 'none';
+            backdrop.style.display = isHidden ? 'block' : 'none';
+        }
+        document.getElementById('mobileMenuToggle')?.addEventListener('click', toggleMobileMenu);
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

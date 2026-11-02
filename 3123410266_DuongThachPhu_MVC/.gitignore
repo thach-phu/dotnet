@@ -1,0 +1,39 @@
+## .NET / Visual Studio
+
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# Secrets / local config (keep appsettings.json structure, ignore local overrides)
+appsettings.*.local.json
+appsettings.Development.json
+secrets.json
+*.pfx
+
+# Rider / JetBrains
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database local files
+*.mdf
+*.ldf
+*.db

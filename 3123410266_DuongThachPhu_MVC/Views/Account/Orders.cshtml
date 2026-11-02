@@ -1,0 +1,83 @@
+@model IReadOnlyList<MVC.Models.Order>
+@{
+    ViewData["Title"] = "Đơn hàng của tôi - Phú Store";
+}
+
+<div class="breadcrumb-nav">
+    <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+    <span class="sep">/</span>
+    <span class="current">Lịch sử đơn hàng</span>
+</div>
+
+<div class="page-heading mb-4">
+    <span class="eyebrow text-primary fw-bold small text-uppercase">TÀI KHOẢN CỦA TÔI</span>
+    <h1 class="page-title fs-2 fw-bold mt-1">Đơn Hàng Của Tôi</h1>
+    <p class="text-muted">Theo dõi tiến độ giao hàng và thông tin chi tiết các đơn hàng đã mua tại Phú Store.</p>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card border-0 rounded-4 shadow-sm text-center py-5 bg-white">
+        <div class="card-body">
+            <span class="fs-1 d-block mb-3">📦</span>
+            <h3 class="fs-5 fw-bold">Bạn chưa có đơn hàng nào</h3>
+            <p class="text-muted mb-4">Khám phá ngay các dòng iPhone 16 Series chính hãng mới nhất.</p>
+            <a class="btn-apple-primary px-4 py-2" asp-controller="Products" asp-action="Index">
+                <span>Khám phá sản phẩm ngay</span>
+                <span class="arrow-icon">→</span>
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="orders-list-wrapper">
+        @foreach (var order in Model)
+        {
+            <div class="order-card p-3 mb-3 bg-white border rounded-4 shadow-sm">
+                @if (TempData["CancelError"] is string cancelError && TempData["CancelledOrderId"] as int? == order.Id)
+                {
+                    <div class="alert alert-danger py-2 px-3 small mb-2">@cancelError</div>
+                }
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 pb-2 border-bottom">
+                    <div>
+                        <h2 class="fs-6 fw-bold mb-0">#@order.OrderCode</h2>
+                        <span class="text-muted small">@order.CreatedAt.ToString("dd/MM/yyyy HH:mm") · @order.Items.Count sản phẩm</span>
+                    </div>
+                    <div class="text-end">
+                        <partial name="_OrderStatusBadge" model="order.Status" />
+                        <div class="fw-bold mt-1">@order.GrandTotal.ToString("N0")₫</div>
+                    </div>
+                </div>
+
+                <div class="order-items-summary py-2 border-bottom">
+                    @foreach (var item in order.Items)
+                    {
+                        <div class="order-item-chip">@item.Quantity x @item.ProductName · @((item.Price * item.Quantity).ToString("N0"))₫</div>
+                    }
+                </div>
+
+                <div class="py-2 border-bottom small">
+                    <span class="text-muted">Địa chỉ giao:</span>
+                    <span class="text-dark">📍 @order.CustomerAddress</span>
+                </div>
+
+                <div class="text-end mt-2 pt-2 d-flex justify-content-end gap-2">
+                    <a asp-action="OrderDetails" asp-route-orderId="@order.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        👁 Xem chi tiết
+                    </a>
+                    @if (order.Status == "Chờ xác nhận")
+                    {
+                        <form asp-action="CancelOrder" method="post" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="orderId" value="@order.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                ✕ Hủy đơn hàng này
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

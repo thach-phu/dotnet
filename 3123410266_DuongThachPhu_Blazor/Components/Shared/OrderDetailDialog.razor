@@ -1,0 +1,157 @@
+@code {
+    [Parameter, EditorRequired] public Order Order { get; set; } = default!;
+    [Parameter] public bool CanEditStatus { get; set; }
+    [Parameter] public IReadOnlyList<string> ValidNextStatuses { get; set; } = [];
+    [Parameter] public EventCallback<string> OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private static readonly (string Label, string Icon)[] Stages =
+    [
+        ("Chờ xác nhận", "📝"),
+        ("Đã xác nhận", "📦"),
+        ("Đang giao", "🚚"),
+        ("Đã giao", "🏠"),
+    ];
+
+    private string selectedStatus = "";
+    private bool confirmingSave;
+    private int? lastSeenOrderId;
+
+    protected override void OnParametersSet()
+    {
+        if (lastSeenOrderId == Order.Id)
+        {
+            return;
+        }
+        lastSeenOrderId = Order.Id;
+        selectedStatus = ValidNextStatuses.Count > 0 ? ValidNextStatuses[0] : "";
+        confirmingSave = false;
+    }
+
+    private void RequestSave()
+    {
+        if (!string.IsNullOrEmpty(selectedStatus))
+        {
+            confirmingSave = true;
+        }
+    }
+
+    private async Task ConfirmSave()
+    {
+        confirmingSave = false;
+        await OnSave.InvokeAsync(selectedStatus);
+    }
+}
+
+<div class="modal-backdrop" @onclick="() => OnClose.InvokeAsync()"></div>
+<div class="modal-dialog-card">
+    <div class="modal-header-row">
+        <div>
+            <span class="eyebrow-accent">CHI TIẾT ĐƠN HÀNG</span>
+            <h3 class="modal-title">#@Order.OrderCode</h3>
+        </div>
+        <button class="modal-close-btn" @onclick="() => OnClose.InvokeAsync()">✕</button>
+    </div>
+
+    <div class="modal-body-form">
+        <div class="form-row-two">
+            <div class="form-field">
+                <label>Khách hàng</label>
+                <p>@Order.CustomerName — @Order.CustomerPhone</p>
+            </div>
+            <div class="form-field">
+                <label>Ngày đặt</label>
+                <p>@Order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+        </div>
+        <div class="form-field">
+            <label>Địa chỉ giao</label>
+            <p>@Order.CustomerAddress</p>
+        </div>
+        @if (!string.IsNullOrEmpty(Order.Note))
+        {
+            <div class="form-field">
+                <label>Ghi chú</label>
+                <p>@Order.Note</p>
+            </div>
+        }
+
+        <div class="order-detail-items">
+            @foreach (var item in Order.Items)
+            {
+                <div class="order-item-chip">
+                    <span>@item.Quantity x @item.ProductName</span>
+                    <strong>@((item.Price * item.Quantity).ToString("N0"))₫</strong>
+                </div>
+            }
+        </div>
+        <div class="order-detail-total">
+            <span>Tổng cộng</span>
+            <strong>@Order.GrandTotal.ToString("N0")₫</strong>
+        </div>
+
+        @if (Order.Status == "Đã hủy")
+        {
+            <div class="order-status-cancelled-banner">Đơn hàng đã bị hủy</div>
+        }
+        else
+        {
+            var currentIndex = Array.FindIndex(Stages, s => s.Label == Order.Status);
+            <div class="order-status-timeline">
+                @for (var i = 0; i < Stages.Length; i++)
+                {
+                    var reached = currentIndex >= i;
+                    var isCurrent = currentIndex == i;
+                    var stepClass = isCurrent ? "current" : (reached ? "completed" : "upcoming");
+                    <div class="timeline-step @stepClass">
+                        <div class="timeline-step-connector"></div>
+                        <div class="timeline-step-circle">@(reached && !isCurrent ? "✓" : Stages[i].Icon)</div>
+                        <span class="timeline-step-label">@Stages[i].Label</span>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (CanEditStatus)
+        {
+            @if (ValidNextStatuses.Count > 0)
+            {
+                <div class="form-field">
+                    <label>Chuyển sang trạng thái</label>
+                    <select class="admin-cat-select" @bind="selectedStatus" disabled="@confirmingSave">
+                        @foreach (var status in ValidNextStatuses)
+                        {
+                            <option value="@status">@status</option>
+                        }
+                    </select>
+                </div>
+                @if (confirmingSave)
+                {
+                    <div class="order-status-cancelled-banner" style="background:#fff7ed; color:#b45309;">
+                        Xác nhận lưu trạng thái: <strong>@selectedStatus</strong>? Hành động không thể hoàn tác.
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted-sm">Không có hành động chuyển trạng thái nào khả dụng cho đơn hàng này.</p>
+            }
+        }
+    </div>
+
+    <div class="modal-footer-row">
+        @if (confirmingSave)
+        {
+            <button type="button" class="btn-apple-secondary" @onclick="() => confirmingSave = false">Hủy</button>
+            <button type="button" class="btn-apple-primary" @onclick="ConfirmSave">Xác nhận lưu</button>
+        }
+        else
+        {
+            <button type="button" class="btn-apple-secondary" @onclick="() => OnClose.InvokeAsync()">Đóng</button>
+            @if (CanEditStatus && ValidNextStatuses.Count > 0)
+            {
+                <button type="button" class="btn-apple-primary" @onclick="RequestSave">Lưu trạng thái</button>
+            }
+        }
+    </div>
+</div>

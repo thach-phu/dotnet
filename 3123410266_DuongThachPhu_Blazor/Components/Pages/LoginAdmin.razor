@@ -1,0 +1,106 @@
+@page "/admin/login"
+
+<PageTitle>Đăng nhập Quản trị - Phú Store</PageTitle>
+
+<div class="login-page-container">
+    <div class="login-box-card">
+        <a class="login-back-home" href="/">
+            ← Quay lại trang chủ
+        </a>
+
+        <div class="login-header-section">
+            <div class="login-brand-logo">
+                <span class="apple-symbol"></span>
+                <span class="brand-title">Phú Store</span>
+            </div>
+            <span class="login-eyebrow">KHU VỰC QUẢN TRỊ VIÊN</span>
+            <h1 class="login-main-title">Đăng Nhập Quản Trị</h1>
+            <p class="login-subtext">Đăng nhập tài khoản để quản lý danh mục sản phẩm, đơn hàng và doanh số cửa hàng.</p>
+        </div>
+
+        <EditForm Model="Input" FormName="login-admin" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <div class="login-form-fields">
+                <div class="login-field-item">
+                    <label>Email quản trị</label>
+                    <div class="login-input-icon-wrap">
+                        <span class="field-icon">👤</span>
+                        <InputText @bind-Value="Input.Email" placeholder="Ví dụ: admin@gmail.com" class="login-input" />
+                    </div>
+                    <ValidationMessage For="@(() => Input.Email)" class="val-err" />
+                </div>
+
+                <div class="login-field-item">
+                    <label>Mật khẩu quản trị</label>
+                    <div class="login-input-icon-wrap">
+                        <span class="field-icon">🔒</span>
+                        <InputText type="password" @bind-Value="Input.Password" placeholder="Nhập mật khẩu..." class="login-input" />
+                    </div>
+                    <ValidationMessage For="@(() => Input.Password)" class="val-err" />
+                </div>
+
+                @if (errorMessage is not null)
+                {
+                    <div class="login-error-alert" role="alert">
+                        <span>⚠️ @errorMessage</span>
+                    </div>
+                }
+
+                <button type="submit" class="btn-login-submit">
+                    <span>Đăng nhập hệ thống</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext HttpContext { get; set; } = default!;
+    [SupplyParameterFromForm] private InputModel Input { get; set; } = default!;
+
+    [Inject] private UserManager<User> UserManager { get; set; } = default!;
+    [Inject] private IUserClaimsPrincipalFactory<User> ClaimsFactory { get; set; } = default!;
+
+    private string? errorMessage;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private async Task HandleLogin()
+    {
+        var email = Input.Email.Trim();
+        var user = await UserManager.FindByEmailAsync(email);
+        if (user is null || !await UserManager.CheckPasswordAsync(user, Input.Password))
+        {
+            errorMessage = "Tài khoản hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.";
+            return;
+        }
+        if (await UserManager.IsLockedOutAsync(user))
+        {
+            errorMessage = "Tài khoản này đã bị vô hiệu hóa.";
+            return;
+        }
+
+        var principal = await ClaimsFactory.CreateAsync(user);
+
+        if (!Permissions.HasAnyAdminAccess(principal))
+        {
+            errorMessage = "Tài khoản này không có quyền quản trị.";
+            return;
+        }
+
+        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, principal);
+        HttpContext.Response.Redirect("/admin");
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập email quản trị.")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
+        public string Password { get; set; } = "";
+    }
+}

@@ -1,0 +1,36 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Đã xảy ra sự cố - Phú Store";
+}
+
+<div class="row justify-content-center my-5">
+    <div class="col-md-7 col-lg-6">
+        <div class="card border-0 rounded-4 shadow-sm p-4 p-md-5 bg-white text-center">
+            <div class="d-inline-grid place-items-center bg-warning-subtle text-warning-emphasis rounded-circle mx-auto mb-3" style="width: 72px; height: 72px; font-size: 2rem;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <h2 class="fs-4 fw-bold mb-2">Đã Xảy Ra Lỗi Xử Lý</h2>
+            <p class="text-muted small mb-4">
+                Hệ thống gặp sự cố ngoài dự kiến trong khi tải dữ liệu. Vui lòng thử lại sau vài giây hoặc quay lại trang chủ.
+            </p>
+
+            @if (Model.ShowRequestId)
+            {
+                <div class="p-3 bg-light rounded-3 border mb-4 text-start small">
+                    <span class="text-muted d-block">Mã theo dõi yêu cầu (Request ID):</span>
+                    <code class="text-danger font-monospace">@Model.RequestId</code>
+                </div>
+            }
+
+            <div class="d-flex justify-content-center gap-2">
+                <a asp-controller="Home" asp-action="Index" class="btn-apple-primary px-4 py-2">
+                    <span>Về trang chủ</span>
+                    <span>→</span>
+                </a>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2" onclick="window.location.reload();">
+                    Tải lại trang
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

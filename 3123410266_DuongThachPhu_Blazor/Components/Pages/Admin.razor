@@ -1,0 +1,1580 @@
+@page "/admin"
+@layout BlazorWeb.Components.Layout.AdminLayout
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+@inject ProductCatalog Catalog
+@inject OrderService OrderService
+@inject CategoryService CategoryService
+@inject CartService Cart
+@inject UserService UserService
+@inject RoleService RoleService
+@inject CustomerService CustomerService
+
+<PageTitle>Quản trị hệ thống - Phú Store</PageTitle>
+
+<AuthorizeView Context="adminAuth">
+    <Authorized>
+        @if (!Permissions.HasAnyAdminAccess(adminAuth.User))
+        {
+            <!-- Authenticated but no admin permission at all -->
+            <div class="admin-auth-prompt-card">
+                <div class="auth-icon-badge">🔐</div>
+                <span class="eyebrow-accent">BẢO MẬT HỆ THỐNG</span>
+                <h2>Yêu Cầu Quyền Quản Trị</h2>
+                <p>Tài khoản của bạn không có quyền truy cập khu vực quản trị.</p>
+            </div>
+        }
+
+        else
+        {
+            <div class="admin-dashboard-layout">
+                <!-- Sidebar -->
+                <nav class="admin-sidebar">
+                    <button class="admin-sidebar-link @(currentTab == "dashboard" ? "active" : "")" @onclick="@(() => currentTab = "dashboard")">
+                        <span class="sidebar-icon">📊</span>
+                        <span>Dashboard</span>
+                    </button>
+                    <AuthorizeView Policy="@Permissions.ProductsManage" Context="productsAuth">
+                        <Authorized>
+                            <button class="admin-sidebar-link @(currentTab == "products" ? "active" : "")" @onclick="@(() => currentTab = "products")">
+                                <span class="sidebar-icon">📱</span>
+                                <span>Quản Lý Sản Phẩm</span>
+                                <span class="sidebar-count">@Catalog.Products.Count</span>
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="@Permissions.CategoriesManage" Context="categoriesAuth">
+                        <Authorized>
+                            <button class="admin-sidebar-link @(currentTab == "categories" ? "active" : "")" @onclick="@(() => currentTab = "categories")">
+                                <span class="sidebar-icon">🗂</span>
+                                <span>Danh Mục</span>
+                                <span class="sidebar-count">@Categories.Count</span>
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="@Permissions.OrdersManage" Context="ordersAuth">
+                        <Authorized>
+                            <button class="admin-sidebar-link @(currentTab == "orders" ? "active" : "")" @onclick="@(() => currentTab = "orders")">
+                                <span class="sidebar-icon">📦</span>
+                                <span>Quản Lý Đơn Hàng</span>
+                                @if (PendingOrdersCount > 0)
+                                {
+                                    <span class="sidebar-badge-notice">@PendingOrdersCount</span>
+                                }
+                                else
+                                {
+                                    <span class="sidebar-count">@Orders.Count</span>
+                                }
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="@Permissions.UsersManage" Context="usersAuth">
+                        <Authorized>
+                            <button class="admin-sidebar-link @(currentTab == "users-roles" ? "active" : "")" @onclick="@(() => currentTab = "users-roles")">
+                                <span class="sidebar-icon">👥</span>
+                                <span>Người Dùng &amp; Phân Quyền</span>
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="@Permissions.CustomersManage" Context="customersAuth">
+                        <Authorized>
+                            <button class="admin-sidebar-link @(currentTab == "customers" ? "active" : "")" @onclick="@(() => currentTab = "customers")">
+                                <span class="sidebar-icon">🧑‍🤝‍🧑</span>
+                                <span>Khách Hàng</span>
+                                <span class="sidebar-count">@Customers.Count</span>
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
+                </nav>
+
+                <!-- Content -->
+                <div class="admin-content-area">
+
+            @if (currentTab == "dashboard")
+            {
+                <div class="admin-panel-card mb-4">
+                    <div class="admin-panel-header d-flex justify-content-between align-items-center flex-wrap gap-2 pb-3 border-bottom mb-4">
+                        <div class="header-left">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace fw-bold">APPLE RESELLER PORTAL</span>
+                                <span class="text-success small fw-bold"><i class="bi bi-circle-fill" style="font-size: 8px;"></i> Hệ thống trực tuyến</span>
+                            </div>
+                            <h2 class="panel-title fs-3 fw-bold mb-1">Tổng Quan Hoạt Động Cửa Hàng</h2>
+                            <span class="panel-sub text-muted small">Doanh thu kinh doanh và số lượng đơn hàng theo trạng thái</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary rounded-pill px-3 py-2 btn-sm fw-semibold" @onclick="@(() => currentTab = "orders")">
+                                <i class="bi bi-receipt me-1"></i> Xem đơn hàng (@Orders.Count)
+                            </button>
+                            <AuthorizeView Policy="@Permissions.ProductsManage">
+                                <Authorized>
+                                    <button class="btn btn-primary rounded-pill px-3 py-2 btn-sm fw-semibold" @onclick="OpenAddModal">
+                                        <i class="bi bi-plus-circle me-1"></i> Thêm iPhone mới
+                                    </button>
+                                </Authorized>
+                            </AuthorizeView>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-stats-grid mb-4">
+                        <div class="ts-stat-card stat-card-revenue">
+                            <div class="stat-card-inner">
+                                <div class="stat-card-header">
+                                    <span class="stat-label">Tổng doanh thu bán ra</span>
+                                    <span class="stat-icon-badge bg-primary text-white">💰</span>
+                                </div>
+                                <strong class="stat-value text-primary">@Summary.TotalRevenue.ToString("N0")₫</strong>
+                                <div class="stat-card-footer">
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">
+                                        ✓ Doanh thu đã thanh toán
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ts-stat-card stat-card-pending">
+                            <div class="stat-card-inner">
+                                <div class="stat-card-header">
+                                    <span class="stat-label">Chờ xác nhận</span>
+                                    <span class="stat-icon-badge bg-warning text-dark">⏳</span>
+                                </div>
+                                <strong class="stat-value text-warning-emphasis">@Summary.StatusCounts.PendingConfirmation</strong>
+                                <div class="stat-card-footer">
+                                    <span class="text-muted small">Cần nhân viên liên hệ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ts-stat-card stat-card-confirmed">
+                            <div class="stat-card-inner">
+                                <div class="stat-card-header">
+                                    <span class="stat-label">Đã xác nhận</span>
+                                    <span class="stat-icon-badge bg-info text-white">✅</span>
+                                </div>
+                                <strong class="stat-value text-info-emphasis">@Summary.StatusCounts.Confirmed</strong>
+                                <div class="stat-card-footer">
+                                    <span class="text-muted small">Đã xuất kho chuẩn bị gửi</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ts-stat-card stat-card-shipping">
+                            <div class="stat-card-inner">
+                                <div class="stat-card-header">
+                                    <span class="stat-label">Đang vận chuyển</span>
+                                    <span class="stat-icon-badge bg-primary-subtle text-primary">🚚</span>
+                                </div>
+                                <strong class="stat-value text-primary">@Summary.StatusCounts.Shipping</strong>
+                                <div class="stat-card-footer">
+                                    <span class="text-muted small">Shipper đang giao hàng</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ts-stat-card stat-card-delivered">
+                            <div class="stat-card-inner">
+                                <div class="stat-card-header">
+                                    <span class="stat-label">Đã hoàn thành</span>
+                                    <span class="stat-icon-badge bg-success text-white">🎉</span>
+                                </div>
+                                <strong class="stat-value text-success">@Summary.StatusCounts.Delivered</strong>
+                                <div class="stat-card-footer">
+                                    <span class="text-muted small">Giao hàng thành công</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ts-stat-card stat-card-cancelled">
+                            <div class="stat-card-inner">
+                                <div class="stat-card-header">
+                                    <span class="stat-label">Đã hủy đơn</span>
+                                    <span class="stat-icon-badge bg-danger text-white">❌</span>
+                                </div>
+                                <strong class="stat-value text-danger">@Summary.StatusCounts.Cancelled</strong>
+                                <div class="stat-card-footer">
+                                    <span class="text-muted small">Khách hủy hoặc từ chối</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order ratio progress bar -->
+                    <div class="order-progress-breakdown p-3 bg-light rounded-4 border">
+                        <div class="d-flex justify-content-between small fw-semibold mb-2">
+                            <span>Tỷ lệ hoàn thành đơn trên tổng số @Orders.Count đơn hàng</span>
+                            <span class="text-success fw-bold">
+                                @(Orders.Count > 0 ? $"{(Summary.StatusCounts.Delivered * 100.0 / Orders.Count):N1}%" : "0%")
+                            </span>
+                        </div>
+                        <div class="progress rounded-pill" style="height: 10px;">
+                            @{
+                                var totalO = Orders.Count;
+                                var delivPct = totalO > 0 ? (Summary.StatusCounts.Delivered * 100.0 / totalO) : 0;
+                                var pendPct = totalO > 0 ? (Summary.StatusCounts.PendingConfirmation * 100.0 / totalO) : 0;
+                                var shipPct = totalO > 0 ? (Summary.StatusCounts.Shipping * 100.0 / totalO) : 0;
+                                var cancPct = totalO > 0 ? (Summary.StatusCounts.Cancelled * 100.0 / totalO) : 0;
+                            }
+                            <div class="progress-bar bg-success" role="progressbar" style="width: @delivPct%;" title="Đã hoàn thành"></div>
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: @pendPct%;" title="Chờ xác nhận"></div>
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: @shipPct%;" title="Đang giao"></div>
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: @cancPct%;" title="Đã hủy"></div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (currentTab == "products")
+            {
+                <AuthorizeView Policy="@Permissions.ProductsManage">
+                    <Authorized>
+                        <!-- PRODUCTS MANAGEMENT TAB -->
+                        <div class="admin-panel-card">
+                            <div class="admin-panel-header">
+                                <div class="header-left">
+                                    <h2 class="panel-title">Danh Sách Sản Phẩm</h2>
+                                    <span class="panel-sub">Thêm mới, sửa thông tin, giá bán và cấu hình sản phẩm</span>
+                                </div>
+                                <button class="btn-apple-primary compact" @onclick="OpenAddModal">
+                                    <span>+ Thêm Sản Phẩm Mới</span>
+                                </button>
+                            </div>
+
+                            <!-- Search and Filter in Table -->
+                            <div class="admin-filter-bar">
+                                <input type="text"
+                                       placeholder="Tìm kiếm sản phẩm theo tên, danh mục..."
+                                       @bind="adminSearch"
+                                       @bind:event="oninput"
+                                       class="admin-search-input" />
+
+                                <select @bind="adminCatFilter" class="admin-cat-select">
+                                    <option value="all">Tất cả danh mục</option>
+                                    @foreach (var c in Catalog.Categories)
+                                    {
+                                        <option value="@c.Name">@c.Name</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <!-- Product Table -->
+                            <div class="admin-table-responsive">
+                                <table class="admin-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ảnh</th>
+                                            <th>Tên Sản Phẩm</th>
+                                            <th>Danh Mục</th>
+                                            <th>Giá Bán</th>
+                                            <th>Nổi Bật</th>
+                                            <th class="text-end">Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (!FilteredAdminProducts.Any())
+                                        {
+                                            <tr>
+                                                <td colspan="6" class="text-center py-5 text-muted">
+                                                    <span class="fs-1 d-block mb-2">📦</span>
+                                                    Chưa có sản phẩm nào phù hợp với tìm kiếm hoặc bộ lọc.
+                                                </td>
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var product in FilteredAdminProducts)
+                                            {
+                                                <tr>
+                                                    <td class="td-thumb">
+                                                        <div class="admin-prod-thumb">
+                                                            <img src="@product.ImageUrl" alt="" />
+                                                            <span class="fallback-emoji">@product.Emoji</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="td-name">
+                                                        <strong>@product.Name</strong>
+                                                        <small>ID: #@product.Id</small>
+                                                    </td>
+                                                    <td>
+                                                        <span class="category-chip">@product.Category</span>
+                                                    </td>
+                                                    <td class="td-price">
+                                                        <strong>@product.Price.ToString("N0")₫</strong>
+                                                    </td>
+                                                    <td>
+                                                        @if (product.IsPopular)
+                                                        {
+                                                            <span class="badge-status-hot">🔥 Nổi bật</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted-sm">Bình thường</span>
+                                                        }
+                                                    </td>
+                                                    <td class="td-actions text-end">
+                                                        <button class="btn-action-edit" @onclick="() => OpenEditModal(product)" title="Chỉnh sửa">
+                                                            ✏ Sửa
+                                                        </button>
+                                                        <button class="btn-action-del" @onclick="() => PromptDelete(product)" title="Xóa">
+                                                            🗑 Xóa
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
+            }
+            else if (currentTab == "categories")
+            {
+                <AuthorizeView Policy="@Permissions.CategoriesManage">
+                    <Authorized>
+                        <div class="admin-panel-card">
+                            <div class="admin-panel-header">
+                                <div class="header-left">
+                                    <h2 class="panel-title">Quản Lý Danh Mục</h2>
+                                    <span class="panel-sub">Tạo, đổi tên và xóa danh mục độc lập với sản phẩm</span>
+                                </div>
+                            </div>
+                            @if (categoryActionError is not null)
+                            {
+                                <div class="login-error-alert" role="alert"><span>⚠️ @categoryActionError</span></div>
+                            }
+                            <div class="admin-filter-bar">
+                                <input type="text" placeholder="Tên danh mục mới..." @bind="newCategoryName" class="admin-search-input" />
+                                <button class="btn-apple-primary compact" @onclick="CreateCategory">+ Thêm danh mục</button>
+                            </div>
+                            <div class="admin-table-responsive">
+                                <table class="admin-data-table">
+                                    <thead><tr><th>Tên danh mục</th><th>Số sản phẩm</th><th class="text-end">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        @if (!Categories.Any())
+                                        {
+                                            <tr>
+                                                <td colspan="3" class="text-center py-5 text-muted">
+                                                    <span class="fs-1 d-block mb-2">🏷️</span>
+                                                    Chưa có danh mục nào được tạo. Hãy nhập tên danh mục ở trên để thêm mới.
+                                                </td>
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var category in Categories)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        @if (editingCategoryId == category.Id)
+                                                        {
+                                                            <input class="admin-search-input" @bind="editingCategoryName" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <strong>@category.Name</strong>
+                                                        }
+                                                    </td>
+                                                    <td>@Catalog.Products.Count(product => product.CategoryId == category.Id)</td>
+                                                    <td class="td-actions text-end">
+                                                        @if (editingCategoryId == category.Id)
+                                                        {
+                                                            <button class="btn-action-edit" @onclick="SaveCategory">Lưu</button>
+                                                            <button class="btn-action-del" @onclick="CancelCategoryEdit">Hủy</button>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button class="btn-action-edit" @onclick="() => BeginCategoryEdit(category)">✏ Sửa</button>
+                                                            <button class="btn-action-del" @onclick="() => DeleteCategory(category.Id)">🗑 Xóa</button>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
+            }
+            else if (currentTab == "orders")
+            {
+                <AuthorizeView Policy="@Permissions.OrdersManage">
+                    <Authorized>
+                        <!-- ORDERS MANAGEMENT TAB -->
+                        <div class="admin-panel-card">
+                            <div class="admin-panel-header">
+                                <div class="header-left">
+                                    <h2 class="panel-title">Danh Sách Đơn Hàng Khách Đặt</h2>
+                                    <span class="panel-sub">Theo dõi thông tin người nhận, sản phẩm đã đặt và cập nhật tiến độ giao hàng</span>
+                                </div>
+                            </div>
+
+                            <!-- Status Filter -->
+                            <div class="order-status-filter-pills">
+                                <button class="status-filter-btn @(orderStatusFilter == "all" ? "active" : "")" @onclick="@(() => orderStatusFilter = "all")">Tất cả (@Orders.Count)</button>
+                                <button class="status-filter-btn @(orderStatusFilter == "Chờ xác nhận" ? "active" : "")" @onclick="@(() => orderStatusFilter = "Chờ xác nhận")">Chờ xác nhận (@Orders.Count(o => o.Status == "Chờ xác nhận"))</button>
+                                <button class="status-filter-btn @(orderStatusFilter == "Đã xác nhận" ? "active" : "")" @onclick="@(() => orderStatusFilter = "Đã xác nhận")">Đã xác nhận (@Orders.Count(o => o.Status == "Đã xác nhận"))</button>
+                                <button class="status-filter-btn @(orderStatusFilter == "Đang giao" ? "active" : "")" @onclick="@(() => orderStatusFilter = "Đang giao")">Đang giao (@Orders.Count(o => o.Status == "Đang giao"))</button>
+                                <button class="status-filter-btn @(orderStatusFilter == "Đã giao" ? "active" : "")" @onclick="@(() => orderStatusFilter = "Đã giao")">Đã giao (@Orders.Count(o => o.Status == "Đã giao"))</button>
+                                <button class="status-filter-btn @(orderStatusFilter == "Đã hủy" ? "active" : "")" @onclick="@(() => orderStatusFilter = "Đã hủy")">Đã hủy (@Orders.Count(o => o.Status == "Đã hủy"))</button>
+                            </div>
+                            @if (orderActionError is not null)
+                            {
+                                <div class="login-error-alert" role="alert">
+                                    <span>⚠️ @orderActionError</span>
+                                </div>
+                            }
+
+                            @if (FilteredOrders.Any())
+                            {
+                                <div class="admin-table-responsive">
+                                    <table class="admin-data-table orders-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Mã Đơn</th>
+                                                <th>Khách Hàng</th>
+                                                <th>Địa Chỉ & Ghi Chú</th>
+                                                <th>Chi Tiết Hàng</th>
+                                                <th>Tổng Tiền</th>
+                                                <th>Trạng Thái</th>
+                                                <th class="text-end">Hành Động</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var order in FilteredOrders)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <strong class="order-code-tag">#@order.OrderCode</strong>
+                                                        <small class="order-time">@order.CreatedAt.ToString("dd/MM HH:mm")</small>
+                                                    </td>
+                                                    <td>
+                                                        <strong>@order.CustomerName</strong>
+                                                        <div><a href="tel:@order.CustomerPhone" class="phone-link">📞 @order.CustomerPhone</a></div>
+                                                    </td>
+                                                    <td class="td-address">
+                                                        <p class="address-text">@order.CustomerAddress</p>
+                                                        @if (!string.IsNullOrEmpty(order.Note))
+                                                        {
+                                                            <small class="order-note-text">📝 @order.Note</small>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <div class="order-items-summary">
+                                                            @foreach (var item in order.Items)
+                                                            {
+                                                                <div class="order-item-chip">
+                                                                    <span>@item.Quantity x @item.ProductName</span>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </td>
+                                                    <td class="td-price">
+                                                        <strong>@order.GrandTotal.ToString("N0")₫</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="order-status-badge @GetStatusCssClass(order.Status)">@order.Status</span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <button class="btn-action-edit" @onclick="() => OpenOrderDetail(order)" title="Xem chi tiết">
+                                                            👁 Xem chi tiết
+                                                        </button>
+                                                        @if (OrderService.GetValidNextStatuses(order.Status).Contains("Đã hủy"))
+                                                        {
+                                                            <button class="btn-action-del" @onclick="() => CancelOrder(order.Id)" title="Hủy đơn hàng">
+                                                                ✕ Hủy
+                                                            </button>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="empty-results-box" style="padding: 2.5rem 1rem;">
+                                    <div class="empty-icon">📦</div>
+                                    <h3>Chưa có đơn hàng nào</h3>
+                                    <p>Khi khách hàng đặt hàng từ website, đơn sẽ hiển thị tại đây.</p>
+                                </div>
+                            }
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
+            }
+            else if (currentTab == "users-roles")
+            {
+                <AuthorizeView Policy="@Permissions.UsersManage">
+                    <Authorized>
+                        <!-- USERS & ROLES MANAGEMENT TAB -->
+                        <div class="admin-panel-card">
+                            <div class="admin-panel-header">
+                                <div class="header-left">
+                                    <h2 class="panel-title">Người Dùng</h2>
+                                    <span class="panel-sub">Xem danh sách tài khoản và gán vai trò cho từng người dùng</span>
+                                </div>
+                                <button class="btn-apple-primary compact" @onclick="OpenAddAccountModal">
+                                    <span>+ Thêm tài khoản</span>
+                                </button>
+                            </div>
+
+                            @if (accountActionError is not null)
+                            {
+                                <div class="login-error-alert" role="alert">
+                                    <span>⚠️ @accountActionError</span>
+                                </div>
+                            }
+
+                            <div class="admin-table-responsive">
+                                <table class="admin-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Email</th>
+                                            <th>Họ Tên</th>
+                                            <th>SĐT</th>
+                                            <th>Vai Trò</th>
+                                            <th>Trạng Thái</th>
+                                            <th class="text-end">Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (!AllUsers.Any())
+                                        {
+                                            <tr>
+                                                <td colspan="6" class="text-center py-5 text-muted">
+                                                    <span class="fs-1 d-block mb-2">👥</span>
+                                                    Chưa có người dùng nào trong hệ thống.
+                                                </td>
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var user in AllUsers)
+                                            {
+                                                var isDisabled = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
+                                                <tr>
+                                                    <td>@user.Email</td>
+                                                    <td>@user.FullName</td>
+                                                    <td>@user.PhoneNumber</td>
+                                                    <td>
+                                                        <select class="admin-cat-select" value="@UserService.GetRoleId(user.Id)" disabled="@isUserActionBusy" @onchange="(e) => HandleRoleChange(user.Id, e)">
+                                                            @foreach (var role in AllRoles)
+                                                            {
+                                                                <option value="@role.Id">@role.Name</option>
+                                                            }
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        @if (isDisabled)
+                                                        {
+                                                            <span class="order-status-badge status-cancelled">Đã khóa</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="order-status-badge status-completed">Hoạt động</span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <label class="toggle-switch" title="@(isDisabled ? "Bật tài khoản" : "Tắt tài khoản")">
+                                                            <input type="checkbox" checked="@(!isDisabled)" disabled="@isUserActionBusy" @onchange="() => ToggleUserLockout(user.Id, !isDisabled)" />
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                        <button class="btn-action-del" disabled="@isUserActionBusy" @onclick="() => DeleteUser(user.Id)" title="Xóa tài khoản">
+                                                            🗑 Xóa
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="admin-panel-card">
+                            <div class="admin-panel-header">
+                                <div class="header-left">
+                                    <h2 class="panel-title">Vai Trò &amp; Phân Quyền</h2>
+                                    <span class="panel-sub">Tạo vai trò mới và gán quyền truy cập cho từng vai trò</span>
+                                </div>
+                            </div>
+
+                            <div class="login-demo-helper">
+                                <p>⏳ Thay đổi quyền ở đây chỉ áp dụng cho những người dùng đăng nhập lại sau khi thay đổi — người dùng đang đăng nhập sẽ giữ quyền cũ cho tới khi họ đăng xuất và đăng nhập lại.</p>
+                            </div>
+
+                            @if (roleActionError is not null)
+                            {
+                                <div class="login-error-alert" role="alert">
+                                    <span>⚠️ @roleActionError</span>
+                                </div>
+                            }
+
+                            <div class="admin-filter-bar">
+                                <input type="text" placeholder="Tên vai trò mới..." @bind="newRoleName" class="admin-search-input" />
+                                <input type="text" placeholder="Mô tả (tùy chọn)..." @bind="newRoleDescription" class="admin-search-input" />
+                                <button class="btn-apple-primary compact" @onclick="HandleCreateRole">
+                                    <span>+ Thêm Vai Trò</span>
+                                </button>
+                            </div>
+
+                            <div class="admin-table-responsive">
+                                <table class="admin-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Vai Trò</th>
+                                            <th>Mô Tả</th>
+                                            @foreach (var permission in PermissionCatalog)
+                                            {
+                                                <th>@permission.Description</th>
+                                            }
+                                            <th class="text-end">Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var role in AllRoles)
+                                        {
+                                            var rolePermissionCodes = RoleService.GetPermissionCodes(role.Id);
+                                            <tr>
+                                                <td><strong>@role.Name</strong></td>
+                                                <td>@role.Description</td>
+                                                @foreach (var permission in PermissionCatalog)
+                                                {
+                                                    <td>
+                                                        <input type="checkbox"
+                                                               checked="@rolePermissionCodes.Contains(permission.Code)"
+                                                               @onchange="(e) => TogglePermission(role, permission.Code, (bool)(e.Value ?? false))" />
+                                                    </td>
+                                                }
+                                                <td class="td-actions text-end">
+                                                    <button class="btn-action-del" title="Xóa vai trò" disabled="@role.IsSystemRole" @onclick="() => HandleDeleteRole(role.Id)">
+                                                        🗑 Xóa
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
+            }
+            else if (currentTab == "customers")
+            {
+                <AuthorizeView Policy="@Permissions.CustomersManage">
+                    <Authorized>
+                        <div class="admin-panel-card">
+                            <div class="admin-panel-header">
+                                <div class="header-left">
+                                    <h2 class="panel-title">Khách Hàng</h2>
+                                    <span class="panel-sub">Danh sách khách hàng và liên kết với tài khoản đăng nhập</span>
+                                </div>
+                            </div>
+                            @if (customerActionError is not null)
+                            {
+                                <div class="login-error-alert" role="alert"><span>⚠️ @customerActionError</span></div>
+                            }
+                            <div class="admin-filter-bar">
+                                <input type="text" placeholder="Họ tên khách hàng..." @bind="newCustomerName" class="admin-search-input" />
+                                <input type="text" placeholder="Số điện thoại..." @bind="newCustomerPhone" class="admin-search-input" />
+                                <button class="btn-apple-primary compact" @onclick="CreateCustomer">+ Thêm khách hàng</button>
+                            </div>
+                            <div class="admin-table-responsive">
+                                <table class="admin-data-table">
+                                    <thead><tr><th>Họ tên</th><th>SĐT</th><th>Liên kết tài khoản</th><th class="text-end">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        @if (!Customers.Any())
+                                        {
+                                            <tr>
+                                                <td colspan="4" class="text-center py-5 text-muted">
+                                                    <span class="fs-1 d-block mb-2">👤</span>
+                                                    Chưa có khách hàng nào. Nhập thông tin ở trên để thêm khách hàng mới.
+                                                </td>
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var customer in Customers)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        @if (editingCustomerId == customer.Id)
+                                                        {
+                                                            <input class="admin-search-input" @bind="editingCustomerName" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <strong>@customer.FullName</strong>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        @if (editingCustomerId == customer.Id)
+                                                        {
+                                                            <input class="admin-search-input" @bind="editingCustomerPhone" />
+                                                        }
+                                                        else
+                                                        {
+                                                            @customer.Phone
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        @if (customer.LinkedEmail is not null)
+                                                        {
+                                                            <span class="badge-status-hot">Đã liên kết: @customer.LinkedEmail</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted-sm">Chưa liên kết</span>
+                                                        }
+                                                    </td>
+                                                    <td class="td-actions text-end">
+                                                        @if (editingCustomerId == customer.Id)
+                                                        {
+                                                            <button class="btn-action-edit" @onclick="SaveCustomer">Lưu</button>
+                                                            <button class="btn-action-del" @onclick="CancelCustomerEdit">Hủy</button>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button class="btn-action-edit" @onclick="() => BeginCustomerEdit(customer)">✏ Sửa</button>
+                                                            @if (customer.LinkedEmail is null)
+                                                            {
+                                                                <button class="btn-action-edit" @onclick="() => OpenMapModal(customer.Id)">Map tài khoản</button>
+                                                            }
+                                                            <button class="btn-action-del" @onclick="() => DeleteCustomer(customer.Id)">🗑 Xóa</button>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
+            }
+
+                </div>
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <!-- Not Authenticated View -->
+        <div class="admin-auth-prompt-card">
+            <div class="auth-icon-badge">🔐</div>
+            <span class="eyebrow-accent">BẢO MẬT HỆ THỐNG</span>
+            <h2>Yêu Cầu Quyền Quản Trị</h2>
+            <p>Khu vực này chỉ dành cho người quản trị cửa hàng Phú Store. Vui lòng đăng nhập bằng tài khoản quản trị để tiếp tục.</p>
+            <a class="btn-apple-primary" href="/admin/login">
+                <span>Đăng nhập Quản trị</span>
+                <span>→</span>
+            </a>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+<!-- ADD ACCOUNT MODAL -->
+@if (showAccountModal)
+{
+    <div class="modal-backdrop" @onclick="CloseAccountModal"></div>
+    <div class="modal-dialog-card">
+        <div class="modal-header-row">
+            <div>
+                <span class="eyebrow-accent">TÀI KHOẢN MỚI</span>
+                <h3 class="modal-title">Thêm Tài Khoản</h3>
+            </div>
+            <button class="modal-close-btn" @onclick="CloseAccountModal">✕</button>
+        </div>
+
+        <EditForm Model="newAccount" OnValidSubmit="HandleCreateAccount">
+            <DataAnnotationsValidator />
+
+            <div class="modal-body-form">
+                <div class="form-row-two">
+                    <div class="form-field">
+                        <label>Họ tên</label>
+                        <InputText @bind-Value="newAccount.FullName" class="form-ctrl" />
+                        <ValidationMessage For="@(() => newAccount.FullName)" class="val-err" />
+                    </div>
+                    <div class="form-field">
+                        <label>Số điện thoại</label>
+                        <InputText @bind-Value="newAccount.Phone" class="form-ctrl" />
+                        <ValidationMessage For="@(() => newAccount.Phone)" class="val-err" />
+                    </div>
+                </div>
+                <div class="form-row-two">
+                    <div class="form-field">
+                        <label>Email <span class="req">*</span></label>
+                        <InputText @bind-Value="newAccount.Email" class="form-ctrl" />
+                        <ValidationMessage For="@(() => newAccount.Email)" class="val-err" />
+                    </div>
+                    <div class="form-field">
+                        <label>Mật khẩu <span class="req">*</span></label>
+                        <InputText type="password" @bind-Value="newAccount.Password" class="form-ctrl" />
+                        <ValidationMessage For="@(() => newAccount.Password)" class="val-err" />
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label>Vai trò <span class="req">*</span></label>
+                    <select class="admin-cat-select" @bind="newAccount.RoleId">
+                        @foreach (var role in AllRoles)
+                        {
+                            <option value="@role.Id">@role.Name</option>
+                        }
+                    </select>
+                </div>
+
+                @if (accountActionError is not null)
+                {
+                    <div class="login-error-alert" role="alert">
+                        <span>⚠️ @accountActionError</span>
+                    </div>
+                }
+            </div>
+
+            <div class="modal-footer-row">
+                <button type="button" class="btn-apple-secondary" @onclick="CloseAccountModal">Hủy</button>
+                <button type="submit" class="btn-apple-primary">Tạo tài khoản</button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@if (mappingCustomerId is not null)
+{
+    <div class="modal-backdrop" @onclick="CloseMapModal"></div>
+    <div class="modal-dialog-card">
+        <div class="modal-header-row">
+            <div>
+                <span class="eyebrow-accent">LIÊN KẾT TÀI KHOẢN</span>
+                <h3 class="modal-title">Map Tài Khoản</h3>
+            </div>
+            <button class="modal-close-btn" @onclick="CloseMapModal">✕</button>
+        </div>
+
+        <div class="modal-body-form">
+            @if (customerActionError is not null)
+            {
+                <div class="login-error-alert" role="alert"><span>⚠️ @customerActionError</span></div>
+            }
+            @if (UnlinkedUsers.Count == 0)
+            {
+                <p class="text-muted-sm">Không còn tài khoản nào chưa liên kết.</p>
+            }
+            else
+            {
+                <div class="form-field">
+                    <label>Chọn tài khoản</label>
+                    <select class="admin-cat-select" @bind="selectedUserIdToMap">
+                        @foreach (var user in UnlinkedUsers)
+                        {
+                            <option value="@user.Id">@user.Email</option>
+                        }
+                    </select>
+                </div>
+            }
+        </div>
+
+        <div class="modal-footer-row">
+            <button type="button" class="btn-apple-secondary" @onclick="CloseMapModal">Hủy</button>
+            @if (UnlinkedUsers.Count > 0)
+            {
+                <button type="button" class="btn-apple-primary" @onclick="ConfirmMapToUser">Liên kết</button>
+            }
+        </div>
+    </div>
+}
+
+<!-- ADD / EDIT PRODUCT MODAL -->
+@if (showProductModal)
+{
+    <div class="modal-backdrop" @onclick="CloseModal"></div>
+    <div class="modal-dialog-card">
+        <div class="modal-header-row">
+            <div>
+                <span class="eyebrow-accent">@(isEditing ? "CẬP NHẬT SẢN PHẨM" : "THÊM MỚI SẢN PHẨM")</span>
+                <h3 class="modal-title">@(isEditing ? $"Chỉnh sửa: {draft.Name}" : "Thêm iPhone Mới Vào Cửa Hàng")</h3>
+            </div>
+            <button class="modal-close-btn" @onclick="CloseModal">✕</button>
+        </div>
+
+        <EditForm Model="draft" OnValidSubmit="SaveProduct">
+            <DataAnnotationsValidator />
+
+            <div class="modal-body-form">
+                <div class="form-row-two">
+                    <div class="form-field">
+                        <label>Tên sản phẩm <span class="req">*</span></label>
+                        <InputText @bind-Value="draft.Name" placeholder="Ví dụ: iPhone 16 Pro Max 256GB" class="form-ctrl" />
+                        <ValidationMessage For="@(() => draft.Name)" class="val-err" />
+                    </div>
+
+                    <div class="form-field">
+                        <label>Dòng máy (Danh mục) <span class="req">*</span></label>
+                        <InputText @bind-Value="draft.Category" placeholder="Ví dụ: iPhone 16" class="form-ctrl" />
+                        <ValidationMessage For="@(() => draft.Category)" class="val-err" />
+                    </div>
+                </div>
+
+                <div class="form-row-two">
+                    <div class="form-field">
+                        <label>Giá bán (VNĐ) <span class="req">*</span></label>
+                        <InputNumber @bind-Value="draft.Price" placeholder="Ví dụ: 30990000" class="form-ctrl" />
+                        <ValidationMessage For="@(() => draft.Price)" class="val-err" />
+                    </div>
+
+                    <div class="form-field">
+                        <label>Biểu tượng Emoji</label>
+                        <InputText @bind-Value="draft.Emoji" placeholder="📱" class="form-ctrl" />
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>URL Hình ảnh sản phẩm</label>
+                    <InputText @bind-Value="draft.ImageUrl" placeholder="https://..." class="form-ctrl" />
+                    @if (!string.IsNullOrWhiteSpace(draft.ImageUrl))
+                    {
+                        <div class="image-preview-box">
+                            <span class="preview-label">Xem trước ảnh:</span>
+                            <img src="@draft.ImageUrl" alt="Xem trước" class="preview-img" />
+                        </div>
+                    }
+                </div>
+
+                <div class="form-field">
+                    <label>Mô tả tóm tắt <span class="req">*</span></label>
+                    <InputTextArea @bind-Value="draft.Description" rows="3" placeholder="Mô tả các tính năng nổi bật..." class="form-ctrl" />
+                    <ValidationMessage For="@(() => draft.Description)" class="val-err" />
+                </div>
+
+                <div class="form-field check-row">
+                    <label class="check-container">
+                        <InputCheckbox @bind-Value="draft.IsPopular" />
+                        <span>Đặt làm <b>Sản phẩm nổi bật (Hot)</b> trên Trang chủ</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-footer-row">
+                <button type="button" class="btn-apple-secondary" @onclick="CloseModal">Hủy bỏ</button>
+                <button type="submit" class="btn-apple-primary">
+                    <span>@(isEditing ? "Lưu thay đổi" : "Thêm sản phẩm")</span>
+                </button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+<!-- DELETE CONFIRMATION MODAL -->
+@if (productToDelete is not null)
+{
+    <div class="modal-backdrop" @onclick="() => productToDelete = null"></div>
+    <div class="modal-dialog-card modal-confirm">
+        <div class="confirm-icon">⚠️</div>
+        <h3>Xác Nhận Xóa Sản Phẩm</h3>
+        <p>Bạn có chắc chắn muốn xóa sản phẩm <b>@productToDelete.Name</b> khỏi hệ thống cửa hàng không? Hành động này không thể hoàn tác.</p>
+        <div class="modal-footer-row">
+            <button class="btn-apple-secondary" @onclick="() => productToDelete = null">Hủy</button>
+            <button class="btn-delete-confirm" @onclick="ConfirmDeleteProduct">Xóa vĩnh viễn</button>
+        </div>
+    </div>
+}
+
+@if (showDetailModal && detailOrder is not null)
+{
+    <OrderDetailDialog Order="detailOrder" CanEditStatus="true"
+        ValidNextStatuses="OrderService.GetValidNextStatuses(detailOrder.Status)"
+        OnSave="SaveOrderDetailStatus" OnClose="CloseOrderDetail" />
+}
+
+<!-- TOAST ALERT -->
+@if (!string.IsNullOrEmpty(toastMessage))
+{
+    <div class="apple-toast" role="status">
+        <span class="toast-icon">✓</span>
+        <div class="toast-body">
+            <strong>Quản trị</strong>
+            <span>@toastMessage</span>
+        </div>
+    </div>
+}
+
+@code {
+    private string currentTab = "dashboard";
+    private string adminSearch = "";
+    private string adminCatFilter = "all";
+    private string orderStatusFilter = "all";
+
+    private bool showProductModal;
+    private bool isEditing;
+    private ProductDraftModel draft = new();
+    private Product? productToDelete;
+    private string? toastMessage;
+    private CancellationTokenSource? toastCts;
+
+    // StoreDbContext dùng chung cho cả circuit Blazor Server (xem IdentityUserStore,
+    // ProductCatalog...). Toast tự ẩn sau 2.5s qua Task.Run + InvokeAsync(StateHasChanged)
+    // chạy nền độc lập — nếu nó render đúng lúc 1 thao tác async khác (xóa/khóa tài
+    // khoản, tạo vai trò...) đang query/ghi DB thì 2 thao tác đụng cùng 1 DbContext và
+    // EF Core ném "A second operation was started on this context instance...". Mọi
+    // async handler có đụng DB và việc hẹn giờ ẩn toast đều phải giành chung 1 khóa này
+    // trước khi chạm vào DB/trigger render để không bao giờ chạy chồng lên nhau.
+    private readonly SemaphoreSlim dbGate = new(1, 1);
+
+    private string newRoleName = "";
+    private string newRoleDescription = "";
+    private string? roleActionError;
+    private bool showAccountModal;
+    private string? accountActionError;
+    private NewAccountModel newAccount = new();
+    private string newCategoryName = "";
+    private string? categoryActionError;
+    private string? orderActionError;
+    private int? editingCategoryId;
+    private string editingCategoryName = "";
+    private string newCustomerName = "";
+    private string newCustomerPhone = "";
+    private string? customerActionError;
+    private int? mappingCustomerId;
+    private int selectedUserIdToMap;
+    private int? editingCustomerId;
+    private string editingCustomerName = "";
+    private string editingCustomerPhone = "";
+
+    private List<Order> Orders => OrderService.GetOrders();
+    private List<User> AllUsers => UserService.GetAllWithRoles();
+    private List<Role> AllRoles => RoleService.GetRoles();
+    private List<Permission> PermissionCatalog => RoleService.GetPermissionCatalog();
+    private List<Category> Categories => CategoryService.GetAll();
+    private List<CustomerListItem> Customers => CustomerService.GetAll();
+    private List<User> UnlinkedUsers => CustomerService.GetUnlinkedUsers();
+
+    private int PendingOrdersCount => Orders.Count(o => o.Status == "Chờ xác nhận");
+    private OrderService.DashboardSummary Summary => OrderService.GetDashboardSummary();
+
+    private IEnumerable<Product> FilteredAdminProducts
+    {
+        get
+        {
+            var query = Catalog.Products.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(adminSearch))
+            {
+                query = query.Where(p =>
+                    p.Name.Contains(adminSearch, StringComparison.OrdinalIgnoreCase) ||
+                    p.Category.Contains(adminSearch, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (adminCatFilter != "all")
+            {
+                query = query.Where(p => string.Equals(p.Category, adminCatFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return query.OrderByDescending(p => p.Id);
+        }
+    }
+
+    private IEnumerable<Order> FilteredOrders
+    {
+        get
+        {
+            var query = Orders.AsEnumerable();
+            if (orderStatusFilter != "all")
+            {
+                query = query.Where(o => o.Status == orderStatusFilter);
+            }
+            return query;
+        }
+    }
+
+    private void OpenAddModal()
+    {
+        draft = new();
+        isEditing = false;
+        showProductModal = true;
+    }
+
+    private void OpenEditModal(Product product)
+    {
+        draft = new ProductDraftModel
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Category = product.Category,
+            Price = product.Price,
+            Description = product.Description,
+            Emoji = product.Emoji,
+            ImageUrl = product.ImageUrl,
+            IsPopular = product.IsPopular
+        };
+        isEditing = true;
+        showProductModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showProductModal = false;
+    }
+
+    private void SaveProduct()
+    {
+        if (isEditing && draft.Id.HasValue)
+        {
+            var product = new Product(
+                draft.Id.Value,
+                draft.Name,
+                draft.Category,
+                draft.Price,
+                draft.Description,
+                string.IsNullOrWhiteSpace(draft.Emoji) ? "📱" : draft.Emoji,
+                draft.IsPopular,
+                draft.ImageUrl ?? "");
+
+            Catalog.Update(product);
+            ShowToast($"Đã cập nhật sản phẩm: {draft.Name}");
+        }
+        else
+        {
+            var product = new Product(
+                0,
+                draft.Name,
+                draft.Category,
+                draft.Price,
+                draft.Description,
+                string.IsNullOrWhiteSpace(draft.Emoji) ? "📱" : draft.Emoji,
+                draft.IsPopular,
+                draft.ImageUrl ?? "");
+
+            Catalog.Add(product);
+            ShowToast($"Đã thêm mới sản phẩm: {draft.Name}");
+        }
+
+        showProductModal = false;
+    }
+
+    private void PromptDelete(Product product)
+    {
+        productToDelete = product;
+    }
+
+    private void ConfirmDeleteProduct()
+    {
+        if (productToDelete is not null)
+        {
+            var name = productToDelete.Name;
+            Catalog.Remove(productToDelete.Id);
+            productToDelete = null;
+            ShowToast($"Đã xóa sản phẩm: {name}");
+        }
+    }
+
+    private void ChangeOrderStatus(int orderId, string newStatus)
+    {
+        var result = OrderService.UpdateOrderStatus(orderId, newStatus);
+        orderActionError = result.Error;
+        if (result.Success)
+        {
+            ShowToast($"Đã cập nhật trạng thái đơn hàng sang: {newStatus}");
+        }
+    }
+
+    private Order? detailOrder;
+    private bool showDetailModal;
+
+    private void OpenOrderDetail(Order order)
+    {
+        detailOrder = order;
+        showDetailModal = true;
+    }
+
+    private void CloseOrderDetail()
+    {
+        showDetailModal = false;
+        detailOrder = null;
+    }
+
+    private void SaveOrderDetailStatus(string newStatus)
+    {
+        if (detailOrder is null) return;
+        ChangeOrderStatus(detailOrder.Id, newStatus);
+        CloseOrderDetail();
+    }
+
+    private void CreateCategory()
+    {
+        var result = CategoryService.Create(newCategoryName);
+        categoryActionError = result.Error;
+        if (!result.Success) return;
+        newCategoryName = "";
+        ShowToast($"Đã thêm danh mục: {result.Category!.Name}");
+    }
+
+    private void CreateCustomer()
+    {
+        var result = CustomerService.Create(newCustomerName, newCustomerPhone);
+        customerActionError = result.Error;
+        if (!result.Success) return;
+        newCustomerName = "";
+        newCustomerPhone = "";
+        ShowToast($"Đã thêm khách hàng: {result.Customer!.FullName}");
+    }
+
+    private void OpenMapModal(int customerId)
+    {
+        mappingCustomerId = customerId;
+        selectedUserIdToMap = UnlinkedUsers.FirstOrDefault()?.Id ?? 0;
+        customerActionError = null;
+    }
+
+    private void CloseMapModal()
+    {
+        mappingCustomerId = null;
+    }
+
+    private void ConfirmMapToUser()
+    {
+        if (mappingCustomerId is not { } customerId) return;
+        if (!UnlinkedUsers.Any(u => u.Id == selectedUserIdToMap))
+        {
+            customerActionError = "Danh sách tài khoản đã thay đổi, vui lòng chọn lại.";
+            return;
+        }
+        var result = CustomerService.MapToUser(customerId, selectedUserIdToMap);
+        customerActionError = result.Error;
+        if (!result.Success) return;
+        CloseMapModal();
+        ShowToast("Đã liên kết khách hàng với tài khoản.");
+    }
+
+    private void BeginCustomerEdit(CustomerListItem customer)
+    {
+        editingCustomerId = customer.Id;
+        editingCustomerName = customer.FullName;
+        editingCustomerPhone = customer.Phone;
+        customerActionError = null;
+    }
+
+    private void CancelCustomerEdit()
+    {
+        editingCustomerId = null;
+    }
+
+    private void SaveCustomer()
+    {
+        if (!editingCustomerId.HasValue) return;
+        var result = CustomerService.Update(editingCustomerId.Value, editingCustomerName, editingCustomerPhone);
+        customerActionError = result.Error;
+        if (!result.Success) return;
+        CancelCustomerEdit();
+        ShowToast("Đã cập nhật khách hàng.");
+    }
+
+    private void DeleteCustomer(int customerId)
+    {
+        var result = CustomerService.Delete(customerId);
+        customerActionError = result.Error;
+        if (result.Success)
+        {
+            ShowToast("Đã xóa khách hàng.");
+        }
+    }
+
+    private void BeginCategoryEdit(Category category)
+    {
+        editingCategoryId = category.Id;
+        editingCategoryName = category.Name;
+        categoryActionError = null;
+    }
+
+    private void CancelCategoryEdit()
+    {
+        editingCategoryId = null;
+        editingCategoryName = "";
+    }
+
+    private void SaveCategory()
+    {
+        if (!editingCategoryId.HasValue) return;
+        var result = CategoryService.Update(editingCategoryId.Value, editingCategoryName);
+        categoryActionError = result.Error;
+        if (!result.Success) return;
+        CancelCategoryEdit();
+        ShowToast("Đã cập nhật danh mục.");
+    }
+
+    private void DeleteCategory(int id)
+    {
+        var result = CategoryService.Delete(id);
+        categoryActionError = result.Error;
+        if (result.Success) ShowToast("Đã xóa danh mục.");
+    }
+
+    private void CancelOrder(int orderId)
+    {
+        var result = OrderService.UpdateOrderStatus(orderId, "Đã hủy");
+        orderActionError = result.Error;
+        if (result.Success)
+        {
+            ShowToast("Đã hủy đơn hàng thành công.");
+        }
+    }
+
+    // isUserActionBusy chỉ để vô hiệu hóa nút/tránh người dùng bấm chồng trên UI;
+    // an toàn thật sự với DbContext dùng chung nằm ở dbGate (xem ghi chú cạnh khai
+    // báo dbGate phía trên).
+    private bool isUserActionBusy;
+
+    private async Task HandleRoleChange(int userId, ChangeEventArgs e)
+    {
+        if (isUserActionBusy) return;
+        if (!int.TryParse(e.Value?.ToString(), out var roleId)) return;
+
+        isUserActionBusy = true;
+        await dbGate.WaitAsync();
+        try
+        {
+            var (success, error) = await UserService.UpdateRoleAsync(userId, roleId);
+            if (success)
+            {
+                ShowToast("Đã cập nhật vai trò người dùng.");
+            }
+            else
+            {
+                roleActionError = error;
+            }
+        }
+        finally
+        {
+            dbGate.Release();
+            isUserActionBusy = false;
+        }
+    }
+
+    private async Task ToggleUserLockout(int userId, bool disable)
+    {
+        if (isUserActionBusy) return;
+
+        isUserActionBusy = true;
+        await dbGate.WaitAsync();
+        try
+        {
+            var (success, error) = await UserService.SetUserLockoutAsync(userId, disable);
+            if (success)
+            {
+                ShowToast(disable ? "Đã tắt tài khoản." : "Đã bật lại tài khoản.");
+            }
+            else
+            {
+                accountActionError = error;
+            }
+        }
+        finally
+        {
+            dbGate.Release();
+            isUserActionBusy = false;
+        }
+    }
+
+    private async Task DeleteUser(int userId)
+    {
+        if (isUserActionBusy) return;
+
+        isUserActionBusy = true;
+        await dbGate.WaitAsync();
+        try
+        {
+            var (success, error) = await UserService.DeleteUserAsync(userId);
+            if (success)
+            {
+                ShowToast("Đã xóa tài khoản.");
+            }
+            else
+            {
+                accountActionError = error;
+            }
+        }
+        finally
+        {
+            dbGate.Release();
+            isUserActionBusy = false;
+        }
+    }
+
+    private void TogglePermission(Role role, string code, bool isChecked)
+    {
+        var current = RoleService.GetPermissionCodes(role.Id).ToHashSet();
+        if (isChecked)
+        {
+            current.Add(code);
+        }
+        else
+        {
+            current.Remove(code);
+        }
+        RoleService.SetRolePermissions(role.Id, current);
+    }
+
+    private async Task HandleCreateRole()
+    {
+        if (string.IsNullOrWhiteSpace(newRoleName))
+        {
+            roleActionError = "Vui lòng nhập tên vai trò.";
+            return;
+        }
+
+        await dbGate.WaitAsync();
+        try
+        {
+            var (success, error, role) = await RoleService.CreateRoleAsync(
+                newRoleName.Trim(),
+                string.IsNullOrWhiteSpace(newRoleDescription) ? null : newRoleDescription.Trim());
+
+            if (!success)
+            {
+                roleActionError = error;
+                return;
+            }
+
+            roleActionError = null;
+            newRoleName = "";
+            newRoleDescription = "";
+            ShowToast("Đã tạo vai trò mới.");
+        }
+        finally
+        {
+            dbGate.Release();
+        }
+    }
+
+    private async Task HandleDeleteRole(int roleId)
+    {
+        await dbGate.WaitAsync();
+        try
+        {
+            var (success, error) = await RoleService.DeleteRoleAsync(roleId);
+            roleActionError = success ? null : error;
+            if (success)
+            {
+                ShowToast("Đã xóa vai trò.");
+            }
+        }
+        finally
+        {
+            dbGate.Release();
+        }
+    }
+
+    private void OpenAddAccountModal()
+    {
+        newAccount = new NewAccountModel { RoleId = AllRoles.FirstOrDefault()?.Id ?? 0 };
+        accountActionError = null;
+        showAccountModal = true;
+    }
+
+    private void CloseAccountModal()
+    {
+        showAccountModal = false;
+    }
+
+    private async Task HandleCreateAccount()
+    {
+        await dbGate.WaitAsync();
+        try
+        {
+            var result = await UserService.CreateAccountAsync(
+                newAccount.FullName, newAccount.Phone, newAccount.Email, newAccount.Password, newAccount.RoleId);
+
+            if (!result.Success)
+            {
+                accountActionError = result.Error;
+                return;
+            }
+
+            showAccountModal = false;
+            ShowToast($"Đã tạo tài khoản: {newAccount.Email}");
+        }
+        finally
+        {
+            dbGate.Release();
+        }
+    }
+
+    private string GetStatusCssClass(string status) => status switch
+    {
+        "Chờ xác nhận" => "status-pending",
+        "Đã xác nhận" => "status-confirmed",
+        "Đang giao" => "status-shipping",
+        "Đã giao" => "status-completed",
+        "Đã hủy" => "status-cancelled",
+        _ => ""
+    };
+
+    private void ShowToast(string message)
+    {
+        toastCts?.Cancel();
+        toastCts = new CancellationTokenSource();
+        var token = toastCts.Token;
+
+        toastMessage = message;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(2500, token);
+                await dbGate.WaitAsync(token);
+                try
+                {
+                    toastMessage = null;
+                    await InvokeAsync(StateHasChanged);
+                }
+                finally
+                {
+                    dbGate.Release();
+                }
+            }
+            catch (TaskCanceledException) { }
+        });
+    }
+
+    private sealed class ProductDraftModel
+    {
+        public int? Id { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập tên sản phẩm.")]
+        public string Name { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập dòng máy (Danh mục).")]
+        public string Category { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Range(100000, 1000000000, ErrorMessage = "Giá sản phẩm phải từ 100.000₫ trở lên.")]
+        public decimal Price { get; set; } = 10000000;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập mô tả sản phẩm.")]
+        public string Description { get; set; } = "";
+
+        public string Emoji { get; set; } = "📱";
+        public string ImageUrl { get; set; } = "";
+        public bool IsPopular { get; set; }
+    }
+
+    private sealed class NewAccountModel
+    {
+        public string FullName { get; set; } = "";
+
+        public string Phone { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập email.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        public string Email { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
+        [System.ComponentModel.DataAnnotations.MinLength(6, ErrorMessage = "Mật khẩu cần tối thiểu 6 ký tự.")]
+        public string Password { get; set; } = "";
+
+        public int RoleId { get; set; }
+    }
+}

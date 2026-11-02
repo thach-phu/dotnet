@@ -1,0 +1,118 @@
+@model MVC.Models.Order
+@{
+    ViewData["Title"] = $"Đặt hàng thành công #{Model.OrderCode} - Phú Store";
+}
+
+<div class="checkout-success-container my-4">
+    <div class="success-card mx-auto p-4 p-md-5 bg-white border rounded-4 shadow-sm" style="max-width: 780px;">
+        <div class="success-header text-center mb-4">
+            <div class="success-icon-badge d-inline-flex align-items-center justify-content-center bg-success text-white rounded-circle fs-2 mb-3" style="width: 70px; height: 70px;">
+                ✓
+            </div>
+            <span class="eyebrow-accent d-block text-success fw-bold small letter-spacing-1">ĐẶT HÀNG THÀNH CÔNG!</span>
+            <h1 class="success-title fs-2 fw-bold mt-1 mb-2">Cảm ơn bạn đã mua sắm tại Phú Store</h1>
+            <p class="success-sub text-muted">
+                Đơn hàng của bạn đã được ghi nhận vào hệ thống. Đội ngũ CSKH sẽ gọi điện xác nhận trong vòng 15 phút.
+            </p>
+        </div>
+
+        <div class="order-receipt-box p-4 bg-light rounded-4 border mb-4">
+            <div class="receipt-header-row d-flex justify-content-between align-items-center pb-3 border-bottom">
+                <div>
+                    <span class="receipt-label text-muted small d-block">MÃ ĐƠN HÀNG</span>
+                    <strong class="receipt-code fs-4 text-primary font-monospace">#@Model.OrderCode</strong>
+                </div>
+                <div class="text-end">
+                    <span class="receipt-label text-muted small d-block">NGÀY ĐẶT HÀNG</span>
+                    <span class="receipt-date fw-medium text-dark">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+            </div>
+
+            <div class="receipt-info-grid row g-3 py-3 border-bottom">
+                <div class="col-md-6">
+                    <span class="info-label text-muted small d-block">👤 Khách hàng:</span>
+                    <strong>@Model.CustomerName</strong>
+                </div>
+                <div class="col-md-6">
+                    <span class="info-label text-muted small d-block">📞 Số điện thoại:</span>
+                    <strong>@Model.CustomerPhone</strong>
+                </div>
+                <div class="col-12">
+                    <span class="info-label text-muted small d-block">📍 Địa chỉ nhận hàng:</span>
+                    <span class="fw-medium">@Model.CustomerAddress</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Note))
+                {
+                    <div class="col-12">
+                        <span class="info-label text-muted small d-block">📝 Ghi chú:</span>
+                        <span class="fst-italic text-secondary">@Model.Note</span>
+                    </div>
+                }
+                <div class="col-md-6">
+                    <span class="info-label text-muted small d-block">📦 Trạng thái:</span>
+                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">@Model.Status</span>
+                </div>
+                <div class="col-md-6">
+                    <span class="info-label text-muted small d-block">💳 Phương thức thanh toán:</span>
+                    <span class="fw-medium">Thanh toán khi nhận hàng (COD)</span>
+                </div>
+            </div>
+
+            <!-- Ordered items table -->
+            <div class="receipt-items-list mt-3">
+                <h5 class="receipt-items-title fs-6 fw-bold mb-3">Chi tiết sản phẩm</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted small">
+                                <th>Sản phẩm</th>
+                                <th class="text-center">Số lượng</th>
+                                <th class="text-end">Đơn giá</th>
+                                <th class="text-end">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td class="fw-medium">@item.ProductName</td>
+                                    <td class="text-center">@item.Quantity</td>
+                                    <td class="text-end text-muted">@item.Price.ToString("N0")₫</td>
+                                    <td class="text-end fw-bold text-dark">@((item.Price * item.Quantity).ToString("N0"))₫</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end text-muted pt-3">Phí vận chuyển:</td>
+                                <td class="text-end text-success fw-bold pt-3">
+                                    @(Model.ShippingFee == 0 ? "Miễn phí" : $"{Model.ShippingFee:N0}₫")
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end fs-6 fw-bold">Tổng thanh toán:</td>
+                                <td class="text-end fs-5 fw-bold text-danger">@Model.GrandTotal.ToString("N0")₫</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="success-actions-row d-flex justify-content-center gap-3 flex-wrap">
+            <a class="btn-apple-primary px-4 py-2" asp-controller="Products" asp-action="Index">
+                <span>Tiếp tục mua sắm</span>
+                <span>→</span>
+            </a>
+            <button type="button" class="btn btn-outline-dark rounded-pill px-4 py-2 fw-bold" onclick="window.print();">
+                <i class="bi bi-printer me-1"></i>In đơn hàng
+            </button>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold" asp-controller="Account" asp-action="Orders">
+                    Xem lịch sử đơn hàng
+                </a>
+            }
+        </div>
+    </div>
+</div>

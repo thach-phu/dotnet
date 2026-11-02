@@ -1,0 +1,79 @@
+@page
+@model AspRazorPageProduct.Pages.Admin.Categories.IndexModel
+@{
+    ViewData["Title"] = "Quản Lý Danh Mục - TechStore Admin";
+}
+
+<!-- Admin Header Banner -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 p-4 rounded-4 bg-dark text-white shadow-sm">
+    <div>
+        <span class="badge bg-warning text-dark text-uppercase px-3 py-1 mb-2 fw-bold">QUẢN TRỊ DANH MỤC</span>
+        <h1 class="fs-3 fw-bold mb-1">Danh Mục Sản Phẩm Công Nghệ</h1>
+        <p class="text-white-50 small mb-0">Cấu hình và phân loại hệ thống sản phẩm trên website TechStore.</p>
+    </div>
+    <div>
+        <a asp-page="Create" class="btn btn-warning text-dark fw-bold rounded-pill px-4 py-2 shadow-sm">
+            <i class="bi bi-plus-circle-fill me-1"></i> Thêm Danh Mục
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 rounded-4 shadow-sm mb-5 bg-white overflow-hidden">
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+            <i class="bi bi-tags-fill text-warning me-2"></i>Danh sách các danh mục hiện tại (@Model.Categories.Count)
+        </h5>
+        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">Hệ thống phân loại</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle table-hover mb-0">
+            <thead class="table-light small text-muted text-uppercase">
+                <tr>
+                    <th scope="col" class="ps-4" style="width: 80px;">Mã</th>
+                    <th scope="col" style="width: 250px;">Tên danh mục</th>
+                    <th scope="col">Mô tả chi tiết</th>
+                    <th scope="col" class="text-end pe-4">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Categories.Any())
+                {
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                            Chưa có danh mục nào trong hệ thống.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var category in Model.Categories)
+                    {
+                        <tr>
+                            <td class="ps-4 text-secondary font-monospace">#@category.Id</td>
+                            <td>
+                                <strong class="text-dark fs-6 d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill p-1"><i class="bi bi-tag"></i></span>
+                                    <span>@category.Name</span>
+                                </strong>
+                            </td>
+                            <td class="text-muted small">
+                                @(string.IsNullOrWhiteSpace(category.Description) ? "Không có mô tả" : category.Description)
+                            </td>
+                            <td class="text-end pe-4 text-nowrap">
+                                <a asp-page="Edit" asp-route-id="@category.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1">
+                                    <i class="bi bi-pencil-square me-1"></i>Sửa
+                                </a>
+                                <form method="post" asp-page-handler="Delete" asp-route-id="@category.Id" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa danh mục này?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                        <i class="bi bi-trash me-1"></i>Xóa
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

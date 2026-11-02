@@ -1,0 +1,21 @@
+@model string
+@{
+    var normalized = Model switch
+    {
+        "Pending" => "Chờ xác nhận",
+        "Completed" or "Hoàn thành" => "Đã giao",
+        "Shipping" => "Đang giao",
+        "Cancelled" => "Đã hủy",
+        _ => Model
+    };
+    var cssClass = normalized switch
+    {
+        "Chờ xác nhận" => "status-pending",
+        "Đã xác nhận" => "status-confirmed",
+        "Đang giao" => "status-shipping",
+        "Đã giao" => "status-completed",
+        "Đã hủy" => "status-cancelled",
+        _ => "status-pending",
+    };
+}
+<span class="order-status-badge @cssClass">@normalized</span>

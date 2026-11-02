@@ -1,0 +1,281 @@
+@page "/products/{Id:int}"
+@rendermode InteractiveServer
+
+@if (Product is null)
+{
+    <PageTitle>Không tìm thấy sản phẩm - Phú Store</PageTitle>
+    <div class="empty-results-box detail-not-found">
+        <div class="empty-icon">📦</div>
+        <h2>Không tìm thấy sản phẩm này</h2>
+        <p>Sản phẩm có thể đã ngừng kinh doanh hoặc đường dẫn không hợp lệ.</p>
+        <a class="btn-apple-primary" href="/products">
+            <span>Quay lại danh mục sản phẩm</span>
+            <span>→</span>
+        </a>
+    </div>
+}
+else
+{
+    <PageTitle>@Product.Name - Phú Store</PageTitle>
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb-nav">
+        <a href="/">Trang chủ</a>
+        <span class="sep">/</span>
+        <a href="/products">Sản phẩm</a>
+        <span class="sep">/</span>
+        <span class="current">@Product.Name</span>
+    </div>
+
+    <!-- Main Detail Grid -->
+    <div class="product-detail-layout">
+        <!-- Left: Image Gallery & Badges -->
+        <div class="detail-gallery-col">
+            <div class="detail-main-image-wrap">
+                <span class="badge-vna-large">VN/A CHÍNH HÃNG</span>
+                @if (Product.IsPopular)
+                {
+                    <span class="badge-hot-large">🔥 BÁN CHẠY</span>
+                }
+                <img src="@Product.ImageUrl" alt="@Product.Name" class="detail-main-img" />
+                <span class="img-emoji-fallback detail-fallback">@Product.Emoji</span>
+            </div>
+            <div class="detail-commitments">
+                <div class="commit-item">
+                    <span>🛡️</span>
+                    <span>Bảo hành chính hãng 12 tháng tại Apple Care</span>
+                </div>
+                <div class="commit-item">
+                    <span>🔄</span>
+                    <span>1 đổi 1 trong 30 ngày nếu phát sinh lỗi phần cứng</span>
+                </div>
+                <div class="commit-item">
+                    <span>📦</span>
+                    <span>Bộ sản phẩm gồm: Hộp, Thân máy, Cáp Type-C, Sách HDSD</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Purchase Options & Specs Summary -->
+        <div class="detail-info-col">
+            <div class="detail-category-tag"> @Product.Category.ToUpperInvariant()</div>
+            <h1 class="detail-title">@Product.Name</h1>
+
+            <div class="detail-rating-row">
+                <span class="rating-stars">★★★★★</span>
+                <span class="rating-score">4.9/5</span>
+                <span class="rating-count">(158 đánh giá thực tế)</span>
+                <span class="stock-badge in-stock">● Còn hàng tại showroom</span>
+            </div>
+
+            <div class="detail-price-box">
+                <div class="price-main">@Product.Price.ToString("N0")₫</div>
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
+                    <div class="price-vat-note">Giá đã bao gồm VAT và toàn bộ thuế phí</div>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small fw-bold">
+                        💳 Trả góp 0% chỉ từ ~@((Product.Price / 6).ToString("N0"))₫/tháng
+                    </span>
+                </div>
+            </div>
+
+            <p class="detail-desc">@Product.Description</p>
+
+            <!-- Promotions Box -->
+            <div class="promo-perks-box">
+                <div class="promo-box-title">🎁 ƯU ĐÃI ĐỘC QUYỀN TẠI PHÚ STORE</div>
+                <ul class="promo-perks-list">
+                    <li>✓ <b>Tặng củ sạc nhanh Apple 20W Type-C</b> chính hãng khi mua máy.</li>
+                    <li>✓ <b>Giảm thêm 500.000₫</b> khi thanh toán chuyển khoản qua ngân hàng.</li>
+                    <li>✓ <b>Tặng gói dán màn hình cường lực KingKong</b> cao cấp miễn phí.</li>
+                    <li>✓ Hỗ trợ <b>trả góp 0%</b> qua thẻ tín dụng và CCCD gắn chip.</li>
+                </ul>
+            </div>
+
+            <!-- Quantity & Purchase Actions -->
+            <div class="purchase-action-panel">
+                <div class="quantity-selector-wrap">
+                    <span class="qty-label">Số lượng:</span>
+                    <div class="qty-control-box">
+                        <button class="qty-btn" @onclick="DecreaseQuantity" disabled="@(quantity <= 1)">−</button>
+                        <span class="qty-val">@quantity</span>
+                        <button class="qty-btn" @onclick="IncreaseQuantity" disabled="@(quantity >= 10)">+</button>
+                    </div>
+                </div>
+
+                <div class="cta-buttons-row">
+                    <button class="btn-add-cart-large" @onclick="AddToCart">
+                        <span>🛒 Thêm vào giỏ</span>
+                    </button>
+                    <button class="btn-buy-now-large" @onclick="BuyNow">
+                        <span>⚡ Mua ngay</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Delivery & Support Highlights -->
+            <div class="support-highlights">
+                <div>🚚 <b>Giao hàng siêu tốc</b> toàn quốc (nội thành 2h)</div>
+                <div>📞 <b>Tổng đài miễn phí:</b> 1800 6868 (8:00 - 21:30)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Specifications Table -->
+    <div class="specs-section">
+        <h2 class="specs-heading">Thông Số Kỹ Thuật Chi Tiết</h2>
+        <div class="specs-table">
+            <div class="specs-row">
+                <span class="specs-label">Dòng máy</span>
+                <span class="specs-val">@Product.Category</span>
+            </div>
+            <div class="specs-row">
+                <span class="specs-label">Tên phiên bản</span>
+                <span class="specs-val">@Product.Name</span>
+            </div>
+            <div class="specs-row">
+                <span class="specs-label">Màn hình</span>
+                <span class="specs-val">Super Retina XDR OLED, Tần số quét 120Hz ProMotion</span>
+            </div>
+            <div class="specs-row">
+                <span class="specs-label">Hệ điều hành</span>
+                <span class="specs-val">iOS 18 tương thích mọi phiên bản mới nhất</span>
+            </div>
+            <div class="specs-row">
+                <span class="specs-label">Camera</span>
+                <span class="specs-val">Camera chính 48MP Fusion, Telephoto 5x, Siêu rộng 12MP</span>
+            </div>
+            <div class="specs-row">
+                <span class="specs-label">Chuẩn kháng nước</span>
+                <span class="specs-val">IP68 (Độ sâu tối đa 6m trong 30 phút)</span>
+            </div>
+            <div class="specs-row">
+                <span class="specs-label">Cổng sạc</span>
+                <span class="specs-val">USB-C tốc độ cao hỗ trợ xuất hình DisplayPort</span>
+            </div>
+            <div class="specs-row">
+                <span class="specs-label">Nguồn gốc</span>
+                <span class="specs-val">Chính hãng Apple Việt Nam (Mã VN/A)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    @if (RelatedProducts.Any())
+    {
+        <div class="related-products-section">
+            <div class="section-title-wrap">
+                <div>
+                    <span class="section-eyebrow">GỢI Ý THÊM</span>
+                    <h2 class="section-title">Sản Phẩm Cùng Dòng Máy</h2>
+                </div>
+                <a class="section-more-link" href="/products">Xem thêm <span>→</span></a>
+            </div>
+
+            <div class="product-grid">
+                @foreach (var related in RelatedProducts)
+                {
+                    <article class="product-card">
+                        <div class="card-badge-wrap">
+                            <span class="badge-vna">VN/A</span>
+                        </div>
+                        <a class="card-img-link" href="@($"/products/{related.Id}")">
+                            <img src="@related.ImageUrl" alt="@related.Name" class="product-thumbnail" loading="lazy" />
+                            <span class="img-emoji-fallback">@related.Emoji</span>
+                        </a>
+                        <div class="card-body">
+                            <span class="product-cat-name">@related.Category</span>
+                            <h3 class="product-name">
+                                <a href="@($"/products/{related.Id}")">@related.Name</a>
+                            </h3>
+                            <div class="product-price-row">
+                                <strong class="current-price">@related.Price.ToString("N0")₫</strong>
+                                <a class="btn-view-detail" href="@($"/products/{related.Id}")">Xem</a>
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+        </div>
+    }
+}
+
+<!-- Toast feedback -->
+@if (!string.IsNullOrEmpty(toastMessage))
+{
+    <div class="apple-toast" role="status">
+        <span class="toast-icon">✓</span>
+        <div class="toast-body">
+            <strong>Giỏ hàng</strong>
+            <span>@toastMessage</span>
+        </div>
+        <a class="toast-link" href="/cart">Xem giỏ →</a>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [Inject] private CartService Cart { get; set; } = default!;
+    [Inject] private ProductCatalog Catalog { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Cart.AttachAsync(JS);
+        }
+    }
+
+    private int quantity = 1;
+    private string? toastMessage;
+    private CancellationTokenSource? toastCts;
+
+    private Product? Product => Catalog.GetById(Id);
+
+    private IEnumerable<Product> RelatedProducts =>
+        Product is not null
+            ? Catalog.GetRelatedProducts(Product.Id, Product.Category, 3)
+            : Enumerable.Empty<Product>();
+
+    protected override void OnParametersSet()
+    {
+        // Reset quantity when navigating between product details
+        quantity = 1;
+    }
+
+    private void IncreaseQuantity()
+    {
+        if (quantity < 10) quantity++;
+    }
+
+    private void DecreaseQuantity()
+    {
+        if (quantity > 1) quantity--;
+    }
+
+    private async Task AddToCart()
+    {
+        if (Product is null) return;
+
+        Cart.Add(Product, quantity);
+        toastCts?.Cancel();
+        toastCts = new CancellationTokenSource();
+        var token = toastCts.Token;
+
+        toastMessage = $"Đã thêm {quantity}x {Product.Name} vào giỏ hàng.";
+        try
+        {
+            await Task.Delay(2500, token);
+            toastMessage = null;
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private void BuyNow()
+    {
+        if (Product is null) return;
+        Cart.Add(Product, quantity);
+        Navigation.NavigateTo("/cart");
+    }
+}

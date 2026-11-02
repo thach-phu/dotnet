@@ -1,0 +1,85 @@
+@model MVC.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng ký tài khoản - Phú Store";
+}
+
+<div class="login-page-container py-5">
+    <div class="login-box-card mx-auto p-4 p-md-5 bg-white border rounded-4 shadow-sm" style="max-width: 520px;">
+        <div class="login-header-section text-center mb-4">
+            <div class="login-brand-logo mb-2">
+                <span class="apple-symbol fs-1"></span>
+            </div>
+            <span class="text-primary small fw-bold text-uppercase letter-spacing-1">TÀI KHOẢN PHÚ STORE</span>
+            <h1 class="login-main-title fs-3 fw-bold mt-1 mb-2">Đăng Ký Tài Khoản</h1>
+            <p class="login-subtext text-muted small">
+                Tạo tài khoản thành viên để tích điểm và nhận ưu đãi độc quyền khi mua sắm các thiết bị Apple.
+            </p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""]?.Errors.Count > 0)
+        {
+            <div class="alert alert-danger rounded-3 py-2 px-3 small mb-3">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                @Html.ValidationSummary(true, "")
+            </div>
+        }
+
+        <form method="post" asp-action="Register">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label asp-for="FullName" class="form-label small fw-semibold text-secondary">Họ và tên</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-person"></i></span>
+                    <input asp-for="FullName" class="form-control border-start-0 ps-0" placeholder="Nguyễn Văn A" required />
+                </div>
+                <span asp-validation-for="FullName" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Phone" class="form-label small fw-semibold text-secondary">Số điện thoại</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-telephone"></i></span>
+                    <input asp-for="Phone" type="tel" class="form-control border-start-0 ps-0" placeholder="0912345678" required />
+                </div>
+                <span asp-validation-for="Phone" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label small fw-semibold text-secondary">Địa chỉ Email</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope"></i></span>
+                    <input asp-for="Email" type="email" class="form-control border-start-0 ps-0" placeholder="name@example.com" required />
+                </div>
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label small fw-semibold text-secondary">Mật khẩu</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock"></i></span>
+                    <input asp-for="Password" type="password" class="form-control border-start-0 ps-0" placeholder="Tối thiểu 6 ký tự..." required />
+                </div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="ConfirmPassword" class="form-label small fw-semibold text-secondary">Xác nhận mật khẩu</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield-lock"></i></span>
+                    <input asp-for="ConfirmPassword" type="password" class="form-control border-start-0 ps-0" placeholder="Nhập lại mật khẩu..." required />
+                </div>
+                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn-apple-primary w-100 py-3 text-center justify-content-center fs-6 fw-bold">
+                <span>Tạo tài khoản mới</span>
+                <span class="ms-1">→</span>
+            </button>
+        </form>
+
+        <div class="login-footer-text text-center mt-4 text-muted small">
+            Đã có tài khoản? <a asp-action="Login" class="text-primary fw-bold text-decoration-none">Đăng nhập tại đây</a>
+        </div>
+    </div>
+</div>

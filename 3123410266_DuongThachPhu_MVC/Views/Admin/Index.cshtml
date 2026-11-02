@@ -1,0 +1,711 @@
+@model IReadOnlyList<MVC.Models.Product>
+@using MVC.Models
+@{
+    ViewData["Title"] = "Quản trị hệ thống - Phú Store";
+    var orders = (IReadOnlyList<Order>)ViewBag.Orders ?? [];
+    var users = (IReadOnlyList<User>)ViewBag.Users ?? [];
+    var roles = (IReadOnlyList<Role>)ViewBag.Roles ?? [];
+    var permissions = (IReadOnlyList<Permission>)ViewBag.Permissions ?? [];
+    var rolePermissions = (IReadOnlyDictionary<int, List<string>>)ViewBag.RolePermissions;
+    var categories = (IReadOnlyList<Category>)ViewBag.Categories ?? [];
+    var userRoleIds = (IReadOnlyDictionary<int, int>)ViewBag.UserRoleIds ?? new Dictionary<int, int>();
+    var dashboard = (MVC.Services.DashboardSummary)ViewBag.Dashboard;
+    var pendingOrders = orders.Count(o => o.Status == "Chờ xác nhận");
+}
+
+@if (TempData["AdminError"] is string error)
+{
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@error
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["AdminSuccess"] is string success)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@success
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="admin-dashboard-layout">
+    <!-- Sidebar -->
+    <div class="nav flex-column admin-sidebar" id="adminTabs" role="tablist" aria-orientation="vertical">
+        <button class="admin-sidebar-link active" id="dashboard-tab" data-bs-toggle="pill" data-bs-target="#tab-dashboard" type="button" role="tab">
+            <span class="sidebar-icon">📊</span>
+            <span>Dashboard</span>
+        </button>
+        @if (User.HasClaim(Permissions.ClaimType, Permissions.ProductsManage))
+        {
+            <button class="admin-sidebar-link" id="products-tab" data-bs-toggle="pill" data-bs-target="#tab-products" type="button" role="tab">
+                <span class="sidebar-icon">📱</span>
+                <span>Quản Lý Sản Phẩm</span>
+                <span class="sidebar-count">@Model.Count</span>
+            </button>
+        }
+        @if (User.HasClaim(Permissions.ClaimType, Permissions.CategoriesManage))
+        {
+            <button class="admin-sidebar-link" id="categories-tab" data-bs-toggle="pill" data-bs-target="#tab-categories" type="button" role="tab">
+                <span class="sidebar-icon">🗂</span>
+                <span>Danh Mục</span>
+                <span class="sidebar-count">@categories.Count</span>
+            </button>
+        }
+        @if (User.HasClaim(Permissions.ClaimType, Permissions.OrdersManage))
+        {
+            <button class="admin-sidebar-link" id="orders-tab" data-bs-toggle="pill" data-bs-target="#tab-orders" type="button" role="tab">
+                <span class="sidebar-icon">📦</span>
+                <span>Quản Lý Đơn Hàng</span>
+                @if (pendingOrders > 0)
+                {
+                    <span class="sidebar-badge-notice">@pendingOrders</span>
+                }
+                else
+                {
+                    <span class="sidebar-count">@orders.Count</span>
+                }
+            </button>
+        }
+        @if (User.HasClaim(Permissions.ClaimType, Permissions.UsersManage))
+        {
+            <button class="admin-sidebar-link" id="users-tab" data-bs-toggle="pill" data-bs-target="#tab-users" type="button" role="tab">
+                <span class="sidebar-icon">👥</span>
+                <span>Người Dùng &amp; Phân Quyền</span>
+            </button>
+        }
+        @if (User.HasClaim(Permissions.ClaimType, Permissions.CustomersManage))
+        {
+            <button class="admin-sidebar-link" id="customers-tab" data-bs-toggle="pill" data-bs-target="#tab-customers" type="button" role="tab">
+                <span class="sidebar-icon">🧑‍🤝‍🧑</span>
+                <span>Khách Hàng</span>
+            </button>
+        }
+    </div>
+
+    <!-- Content -->
+    <div class="admin-content-area">
+    <div class="tab-content" id="adminTabsContent">
+    <!-- TAB 0: DASHBOARD -->
+    <div class="tab-pane fade show active" id="tab-dashboard" role="tabpanel">
+        <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden mb-4">
+            <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace fw-bold">APPLE RESELLER PORTAL</span>
+                        <span class="text-success small fw-bold"><i class="bi bi-circle-fill" style="font-size: 8px;"></i> Hệ thống trực tuyến</span>
+                    </div>
+                    <h5 class="fw-bold mb-0">Tổng Quan Hoạt Động Cửa Hàng</h5>
+                    <small class="text-muted">Doanh thu kinh doanh và trạng thái xử lý đơn hàng toàn hệ thống</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary rounded-pill px-3 py-2 btn-sm fw-semibold" onclick="document.getElementById('orders-tab').click()">
+                        <i class="bi bi-receipt me-1"></i> Xem đơn hàng (@orders.Count)
+                    </button>
+                    @if (User.HasClaim(Permissions.ClaimType, Permissions.ProductsManage))
+                    {
+                        <a class="btn btn-primary rounded-pill px-3 py-2 btn-sm fw-semibold" asp-action="EditProduct">
+                            <i class="bi bi-plus-circle me-1"></i> Thêm iPhone mới
+                        </a>
+                    }
+                </div>
+            </div>
+            
+            <div class="card-body p-4">
+                <div class="dashboard-stats-grid mb-4">
+                    <div class="ts-stat-card stat-card-revenue">
+                        <div class="stat-card-inner">
+                            <div class="stat-card-header">
+                                <span class="stat-label">Tổng doanh thu bán ra</span>
+                                <span class="stat-icon-badge bg-primary text-white">💰</span>
+                            </div>
+                            <strong class="stat-value text-primary">@dashboard.TotalRevenue.ToString("N0")₫</strong>
+                            <div class="stat-card-footer">
+                                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">
+                                    ✓ Doanh thu đã thanh toán
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-stat-card stat-card-pending">
+                        <div class="stat-card-inner">
+                            <div class="stat-card-header">
+                                <span class="stat-label">Chờ xác nhận</span>
+                                <span class="stat-icon-badge bg-warning text-dark">⏳</span>
+                            </div>
+                            <strong class="stat-value text-warning-emphasis">@dashboard.StatusCounts.PendingConfirmation</strong>
+                            <div class="stat-card-footer">
+                                <span class="text-muted small">Cần nhân viên liên hệ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-stat-card stat-card-confirmed">
+                        <div class="stat-card-inner">
+                            <div class="stat-card-header">
+                                <span class="stat-label">Đã xác nhận</span>
+                                <span class="stat-icon-badge bg-info text-white">✅</span>
+                            </div>
+                            <strong class="stat-value text-info-emphasis">@dashboard.StatusCounts.Confirmed</strong>
+                            <div class="stat-card-footer">
+                                <span class="text-muted small">Đã xuất kho chuẩn bị gửi</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-stat-card stat-card-shipping">
+                        <div class="stat-card-inner">
+                            <div class="stat-card-header">
+                                <span class="stat-label">Đang vận chuyển</span>
+                                <span class="stat-icon-badge bg-primary-subtle text-primary">🚚</span>
+                            </div>
+                            <strong class="stat-value text-primary">@dashboard.StatusCounts.Shipping</strong>
+                            <div class="stat-card-footer">
+                                <span class="text-muted small">Shipper đang giao hàng</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-stat-card stat-card-delivered">
+                        <div class="stat-card-inner">
+                            <div class="stat-card-header">
+                                <span class="stat-label">Đã hoàn thành</span>
+                                <span class="stat-icon-badge bg-success text-white">🎉</span>
+                            </div>
+                            <strong class="stat-value text-success">@dashboard.StatusCounts.Delivered</strong>
+                            <div class="stat-card-footer">
+                                <span class="text-muted small">Giao hàng thành công</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-stat-card stat-card-cancelled">
+                        <div class="stat-card-inner">
+                            <div class="stat-card-header">
+                                <span class="stat-label">Đã hủy đơn</span>
+                                <span class="stat-icon-badge bg-danger text-white">❌</span>
+                            </div>
+                            <strong class="stat-value text-danger">@dashboard.StatusCounts.Cancelled</strong>
+                            <div class="stat-card-footer">
+                                <span class="text-muted small">Khách hủy hoặc từ chối</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order ratio progress bar -->
+                <div class="order-progress-breakdown p-3 bg-light rounded-4 border">
+                    <div class="d-flex justify-content-between small fw-semibold mb-2">
+                        <span>Tỷ lệ hoàn thành đơn trên tổng số @orders.Count đơn hàng</span>
+                        <span class="text-success fw-bold">
+                            @(orders.Count > 0 ? $"{(dashboard.StatusCounts.Delivered * 100.0 / orders.Count):N1}%" : "0%")
+                        </span>
+                    </div>
+                    <div class="progress rounded-pill" style="height: 10px;">
+                        @{
+                            var totalO = orders.Count;
+                            var delivPct = totalO > 0 ? (dashboard.StatusCounts.Delivered * 100.0 / totalO) : 0;
+                            var pendPct = totalO > 0 ? (dashboard.StatusCounts.PendingConfirmation * 100.0 / totalO) : 0;
+                            var shipPct = totalO > 0 ? (dashboard.StatusCounts.Shipping * 100.0 / totalO) : 0;
+                            var cancPct = totalO > 0 ? (dashboard.StatusCounts.Cancelled * 100.0 / totalO) : 0;
+                        }
+                        <div class="progress-bar bg-success" role="progressbar" style="width: @delivPct%;" title="Đã hoàn thành"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: @pendPct%;" title="Chờ xác nhận"></div>
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: @shipPct%;" title="Đang giao"></div>
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: @cancPct%;" title="Đã hủy"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- TAB 1: SẢN PHẨM -->
+    @if (User.HasClaim(Permissions.ClaimType, Permissions.ProductsManage))
+    {
+        <div class="tab-pane fade" id="tab-products" role="tabpanel">
+            <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold mb-0">Danh sách sản phẩm iPhone (@Model.Count)</h5>
+                        <small class="text-muted">Quản lý giá bán, hình ảnh và thông tin kỹ thuật</small>
+                    </div>
+                    <a class="btn-apple-primary px-3 py-2 fs-6" asp-action="EditProduct">
+                        <span>+ Thêm sản phẩm mới</span>
+                    </a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th>Hình ảnh</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Danh mục</th>
+                                <th>Giá niêm yết</th>
+                                <th>Nổi bật</th>
+                                <th class="text-end">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        Chưa có sản phẩm nào trong kho. Nhấn "+ Thêm sản phẩm mới" để bắt đầu.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var product in Model)
+                                {
+                                    <tr>
+                                        <td style="width: 70px;">
+                                            @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                                            {
+                                                <img src="@product.ImageUrl" alt="@product.Name" class="rounded-3 object-fit-contain bg-light p-1" style="width: 50px; height: 50px;" onerror="this.style.display='none';" />
+                                            }
+                                            else
+                                            {
+                                                <span class="fs-4">@product.Emoji</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <strong class="d-block">@product.Name</strong>
+                                            <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;">@product.Description</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1">@product.Category</span>
+                                        </td>
+                                        <td>
+                                            <strong class="text-primary font-monospace">@product.Price.ToString("N0")₫</strong>
+                                        </td>
+                                        <td>
+                                            @if (product.IsPopular)
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1">🔥 Hot</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-muted border rounded-pill px-2 py-1">Thường</span>
+                                            }
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <a class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1" asp-action="EditProduct" asp-route-id="@product.Id">
+                                                <i class="bi bi-pencil-square me-1"></i>Sửa
+                                            </a>
+                                            <form class="d-inline" asp-action="DeleteProduct" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@product.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                                    <i class="bi bi-trash me-1"></i>Xóa
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- TAB 2: DANH MỤC -->
+    @if (User.HasClaim(Permissions.ClaimType, Permissions.CategoriesManage))
+    {
+        <div class="tab-pane fade" id="tab-categories" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
+                        <h5 class="fw-bold mb-3">Thêm danh mục mới</h5>
+                        <form asp-action="CreateCategory" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-secondary">Tên danh mục</label>
+                                <input class="form-control rounded-3" name="Name" maxlength="100" required placeholder="Ví dụ: iPhone 16 Series" />
+                            </div>
+                            <button type="submit" class="btn-apple-primary w-100 py-2 justify-content-center">
+                                <span>Thêm danh mục</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden">
+                        <div class="card-header bg-white py-3 px-4 border-bottom">
+                            <h5 class="fw-bold mb-0">Danh sách danh mục hiện tại (@categories.Count)</h5>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-muted small text-uppercase">
+                                    <tr>
+                                        <th style="width: 80px;">Mã</th>
+                                        <th>Tên danh mục</th>
+                                        <th class="text-end">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!categories.Any())
+                                    {
+                                        <tr>
+                                            <td colspan="3" class="text-center py-5 text-muted">
+                                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                                Chưa có danh mục nào. Hãy tạo danh mục đầu tiên bên trái.
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var category in categories)
+                                        {
+                                            <tr>
+                                                <td class="text-muted font-monospace">#@category.Id</td>
+                                                <td>
+                                                    <form asp-action="UpdateCategory" method="post" class="d-flex gap-2">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="Id" value="@category.Id" />
+                                                        <input class="form-control form-control-sm rounded-3" name="Name" value="@category.Name" maxlength="100" required />
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-3 text-nowrap">
+                                                            <i class="bi bi-check-lg me-1"></i>Lưu
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="text-end">
+                                                    <form asp-action="DeleteCategory" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa danh mục này?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@category.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                                            <i class="bi bi-trash me-1"></i>Xóa
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- TAB 3: ĐƠN HÀNG -->
+    @if (User.HasClaim(Permissions.ClaimType, Permissions.OrdersManage))
+    {
+        <div class="tab-pane fade" id="tab-orders" role="tabpanel">
+            <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-receipt text-primary me-2"></i>Quản lý đơn hàng (@orders.Count)
+                    </h5>
+                    <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">Giao dịch khách hàng</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Khách hàng &amp; SĐT</th>
+                                <th>Địa chỉ giao</th>
+                                <th>Tổng tiền</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!orders.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        Chưa có đơn hàng nào trong hệ thống.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var order in orders)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong class="text-primary font-monospace">#@order.OrderCode</strong>
+                                            <small class="d-block text-muted">@order.CreatedAt.ToString("dd/MM/yy HH:mm")</small>
+                                        </td>
+                                        <td>
+                                            <strong>@order.CustomerName</strong>
+                                            <small class="d-block text-muted">@order.CustomerPhone</small>
+                                        </td>
+                                        <td>
+                                            <small class="d-inline-block text-truncate" style="max-width: 220px;" title="@order.CustomerAddress">
+                                                @order.CustomerAddress
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <strong class="text-danger font-monospace">@order.GrandTotal.ToString("N0")₫</strong>
+                                        </td>
+                                        <td style="min-width: 160px;">
+                                            <partial name="_OrderStatusBadge" model="order.Status" />
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <a asp-action="OrderDetails" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1">
+                                                <i class="bi bi-eye me-1"></i>Chi tiết
+                                            </a>
+                                            @if (order.Status != "Đã giao" && order.Status != "Đã hủy")
+                                            {
+                                                <form asp-action="CancelOrder" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@order.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                                        <i class="bi bi-x-circle me-1"></i>Hủy đơn
+                                                    </button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- TAB 4: NGƯỜI DÙNG & PHÂN QUYỀN -->
+    @if (User.HasClaim(Permissions.ClaimType, Permissions.UsersManage))
+    {
+        <div class="tab-pane fade" id="tab-users" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card border-0 rounded-4 shadow-sm bg-white overflow-hidden mb-4">
+                        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold mb-0">
+                                <i class="bi bi-people-fill text-primary me-2"></i>Danh sách tài khoản &amp; Vai trò (@users.Count)
+                            </h5>
+                            <button type="button" class="btn btn-sm btn-dark rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#newAccountModal">
+                                <i class="bi bi-person-plus-fill me-1"></i>+ Thêm tài khoản
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-muted small text-uppercase">
+                                    <tr>
+                                        <th>Họ tên</th>
+                                        <th>Email</th>
+                                        <th>Vai trò</th>
+                                        <th>Ngày tạo</th>
+                                        <th>Trạng thái</th>
+                                        <th class="text-end">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!users.Any())
+                                    {
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                                Chưa có tài khoản người dùng nào.
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var user in users)
+                                        {
+                                            var isDisabled = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
+                                            <tr>
+                                                <td><strong class="text-dark">@user.FullName</strong></td>
+                                                <td class="text-muted small font-monospace">@user.Email</td>
+                                                <td>
+                                                    <form asp-action="UpdateUserRole" method="post" class="d-flex gap-2">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="userId" value="@user.Id" />
+                                                        <select class="form-select form-select-sm rounded-3" name="roleId">
+                                                            @{ var currentRoleId = userRoleIds.GetValueOrDefault(user.Id); }
+                                                            @foreach (var role in roles)
+                                                            {
+                                                                <option value="@role.Id" selected="@(role.Id == currentRoleId)">@role.Name</option>
+                                                            }
+                                                        </select>
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-3 text-nowrap">
+                                                            <i class="bi bi-check-lg me-1"></i>Lưu
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                <td class="small text-muted"><i class="bi bi-calendar3 me-1"></i>@user.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                                <td>
+                                                    @if (isDisabled)
+                                                    {
+                                                        <span class="order-status-badge status-cancelled">Đã khóa</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="order-status-badge status-completed">Hoạt động</span>
+                                                    }
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    <form asp-action="SetUserLockout" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="userId" value="@user.Id" />
+                                                        <input type="hidden" name="disabled" id="lockout-disabled-@user.Id" value="@(!isDisabled)" />
+                                                        <label class="toggle-switch" title="@(isDisabled ? "Bật tài khoản" : "Tắt tài khoản")">
+                                                            <input type="checkbox" checked="@(!isDisabled)"
+                                                                   onchange="document.getElementById('lockout-disabled-@user.Id').value = !this.checked; this.form.submit();" />
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </form>
+                                                    <form asp-action="DeleteUser" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản này?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="userId" value="@user.Id" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                        <h5 class="fw-bold mb-3">
+                            <i class="bi bi-shield-plus text-warning me-2"></i>Tạo vai trò mới
+                        </h5>
+                        <form asp-action="CreateRole" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold text-secondary">Tên vai trò</label>
+                                <input class="form-control rounded-3" name="Name" placeholder="Ví dụ: Nhân viên kho" required />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-secondary">Mô tả nhiệm vụ</label>
+                                <input class="form-control rounded-3" name="Description" placeholder="Mô tả phạm vi quyền hạn..." />
+                            </div>
+                            <button type="submit" class="btn-apple-primary w-100 py-2 justify-content-center">
+                                <span>Tạo vai trò</span>
+                                <span class="arrow-icon">→</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
+                        <h5 class="fw-bold mb-3">Phân quyền chi tiết cho vai trò</h5>
+                        @foreach (var role in roles)
+                        {
+                            <div class="p-3 mb-3 bg-light rounded-3 border">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong class="text-primary fs-6">@role.Name</strong>
+                                    @if (!role.IsSystemRole)
+                                    {
+                                        <form asp-action="DeleteRole" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa vai trò này?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="roleId" value="@role.Id" />
+                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0">Xóa</button>
+                                        </form>
+                                    }
+                                </div>
+                                <form asp-action="SaveRolePermissions" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="RoleId" value="@role.Id" />
+                                    <div class="row g-2">
+                                        @foreach (var perm in permissions)
+                                        {
+                                            var isChecked = rolePermissions.TryGetValue(role.Id, out var perms) && perms.Contains(perm.Code);
+                                            <div class="col-12">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="PermissionCodes" value="@perm.Code" id="perm_@(role.Id)_@(perm.Code)" @(isChecked ? "checked" : "") />
+                                                    <label class="form-check-label small" for="perm_@(role.Id)_@(perm.Code)">
+                                                        @perm.Description
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3 mt-2">
+                                        Lưu thay đổi quyền
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- TAB 5: KHÁCH HÀNG -->
+    @if (User.HasClaim(Permissions.ClaimType, Permissions.CustomersManage))
+    {
+        <div class="tab-pane fade" id="tab-customers" role="tabpanel">
+            <partial name="_CustomersTab" />
+        </div>
+    }
+</div>
+    </div>
+</div>
+
+<!-- Modal: Thêm tài khoản -->
+<div class="modal fade" id="newAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+            <form asp-action="CreateAccount" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Thêm tài khoản mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Họ tên</label>
+                        <input class="form-control rounded-3" name="FullName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Số điện thoại</label>
+                        <input class="form-control rounded-3" name="Phone" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Email</label>
+                        <input type="email" class="form-control rounded-3" name="Email" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Mật khẩu</label>
+                        <input type="password" class="form-control rounded-3" name="Password" required minlength="6" />
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label small fw-semibold text-secondary">Vai trò</label>
+                        <select class="form-select rounded-3" name="RoleId">
+                            @foreach (var role in roles)
+                            {
+                                <option value="@role.Id">@role.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-dark rounded-pill px-3">Tạo tài khoản</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+    (function () {
+        var tab = new URLSearchParams(window.location.search).get('tab');
+        if (tab) {
+            var tabButton = document.getElementById(tab + '-tab');
+            if (tabButton) tabButton.click();
+        }
+    })();
+</script>
+</div>

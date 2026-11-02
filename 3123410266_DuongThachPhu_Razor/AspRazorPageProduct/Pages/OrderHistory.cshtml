@@ -1,0 +1,84 @@
+@page
+@model AspRazorPageProduct.Pages.OrderHistoryModel
+@{
+    ViewData["Title"] = "Lịch Sử Đơn Hàng - TechStore";
+}
+
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-page="/Index" class="text-decoration-none text-muted">Trang chủ</a></li>
+        <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Lịch sử đơn hàng</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fs-4 fw-bold mb-1"><i class="bi bi-clock-history text-primary me-2"></i>Lịch Sử Đơn Hàng Của Bạn</h2>
+        <p class="text-muted small mb-0">Theo dõi thông tin chi tiết và trạng thái các đơn hàng đã mua.</p>
+    </div>
+</div>
+
+@if (!Model.Orders.Any())
+{
+    <div class="card border-0 rounded-4 shadow-sm text-center py-5 bg-white">
+        <div class="card-body">
+            <div class="display-1 text-muted mb-3"><i class="bi bi-bag-x"></i></div>
+            <h4 class="fw-bold">Bạn chưa có đơn hàng nào</h4>
+            <p class="text-muted mb-4">Khám phá các sản phẩm công nghệ đang được ưu đãi hấp dẫn ngay hôm nay.</p>
+            <a asp-page="/Index" class="ts-btn-primary px-4 py-2">
+                <span>Mua sắm ngay</span>
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="orders-list-wrapper">
+        @foreach (var order in Model.Orders)
+        {
+            <div class="order-card p-3 mb-3 bg-white border rounded-4 shadow-sm">
+                @if (TempData["CancelError"] is string cancelError)
+                {
+                    <div class="alert alert-danger py-2 px-3 small mb-2">@cancelError</div>
+                }
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 pb-2 border-bottom">
+                    <div>
+                        <h2 class="fs-6 fw-bold mb-0">#@order.OrderId</h2>
+                        <span class="text-muted small">@order.OrderDate.ToString("dd/MM/yyyy HH:mm") · @order.Items.Count sản phẩm</span>
+                    </div>
+                    <div class="text-end">
+                        <partial name="/Pages/Shared/_OrderStatusBadge.cshtml" model="order.Status" />
+                        <div class="fw-bold mt-1">@order.TotalAmount.ToString("N0")₫</div>
+                    </div>
+                </div>
+
+                <div class="order-items-summary py-2 border-bottom">
+                    @foreach (var item in order.Items)
+                    {
+                        <div class="order-item-chip">@item.Quantity x @item.Product.Name · @item.TotalPrice.ToString("N0")₫</div>
+                    }
+                </div>
+
+                <div class="py-2 border-bottom small">
+                    <span class="text-muted">Địa chỉ giao:</span>
+                    <span class="text-dark">📍 @order.ShippingAddress</span>
+                </div>
+
+                <div class="text-end mt-2 pt-2 d-flex justify-content-end gap-2">
+                    <a asp-page="/OrderConfirmation" asp-route-id="@order.OrderId" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <i class="bi bi-eye me-1"></i>Xem chi tiết
+                    </a>
+                    @if (order.Status == "Chờ xác nhận")
+                    {
+                        <form method="post" asp-page-handler="CancelOrder" onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này?');">
+                            <input type="hidden" name="orderId" value="@order.OrderId" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                <i class="bi bi-x-circle me-1"></i>Hủy đơn hàng này
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

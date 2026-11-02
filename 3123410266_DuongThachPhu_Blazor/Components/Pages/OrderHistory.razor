@@ -1,0 +1,145 @@
+@page "/orders"
+@rendermode InteractiveServer
+@inject OrderService OrderService
+@inject NavigationManager Navigation
+
+<PageTitle>Đơn hàng của tôi - Phú Store</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="page-header-wrap">
+            <span class="section-eyebrow">TÀI KHOẢN</span>
+            <h1 class="page-title">Đơn Hàng Của Tôi</h1>
+            <p class="page-subtitle">Xem lại các đơn hàng đã đặt bằng tài khoản này.</p>
+        </div>
+
+        @if (orders.Count == 0)
+        {
+            <div class="empty-results-box">
+                <div class="empty-icon">📦</div>
+                <h2>Chưa có đơn hàng</h2>
+                <p>Những đơn hàng bạn đặt sau khi đăng nhập sẽ được lưu và hiển thị tại đây.</p>
+                <a class="btn-apple-primary" href="/products">Bắt đầu mua sắm →</a>
+            </div>
+        }
+        else
+        {
+            <div class="order-history-list">
+                @foreach (var order in orders)
+                {
+                    <article class="admin-panel-card order-history-card">
+                        <div class="admin-panel-header">
+                            <div class="header-left">
+                                <h2 class="panel-title">#@order.OrderCode</h2>
+                                <span class="panel-sub">@order.CreatedAt.ToString("dd/MM/yyyy HH:mm") · @order.Items.Count sản phẩm</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="order-status-badge status-@GetStatusClass(order.Status)">@order.Status</span>
+                                <strong class="order-history-total">@order.GrandTotal.ToString("N0")₫</strong>
+                            </div>
+                        </div>
+                        <div class="order-items-summary">
+                            @foreach (var item in order.Items)
+                            {
+                                <div class="order-item-chip">@item.Quantity x @item.ProductName · @((item.Price * item.Quantity).ToString("N0"))₫</div>
+                            }
+                        </div>
+                        <div class="order-history-address">📍 @order.CustomerAddress</div>
+                        <div class="order-history-actions">
+                            <button class="btn-action-edit" @onclick="() => OpenOrderDetail(order)">
+                                👁 Xem chi tiết
+                            </button>
+                            @if (order.Status == "Chờ xác nhận")
+                            {
+                                <button class="btn-action-del" @onclick="() => CancelOrder(order.Id)">
+                                    ✕ Hủy đơn hàng này
+                                </button>
+                            }
+                        </div>
+                        @if (cancelError is not null && cancellingOrderId == order.Id)
+                        {
+                            <div class="login-error-alert" role="alert">
+                                <span>⚠️ @cancelError</span>
+                            </div>
+                        }
+                    </article>
+                }
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <div class="admin-auth-prompt-card">
+            <div class="auth-icon-badge">🔐</div>
+            <h2>Vui lòng đăng nhập</h2>
+            <p>Đăng nhập để xem lịch sử đơn hàng của bạn.</p>
+            <a class="btn-apple-primary" href="/login?returnUrl=%2Forders">Đăng nhập →</a>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@if (showDetailModal && detailOrder is not null)
+{
+    <OrderDetailDialog Order="detailOrder" CanEditStatus="false"
+        ValidNextStatuses="@(Array.Empty<string>())" OnClose="CloseOrderDetail" />
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+    private List<Order> orders = [];
+    private int? currentUserId;
+    private string? cancelError;
+    private int? cancellingOrderId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthStateTask).User;
+        var claim = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (int.TryParse(claim, out var userId))
+        {
+            currentUserId = userId;
+            orders = OrderService.GetOrdersForUser(userId);
+        }
+    }
+
+    private void CancelOrder(int orderId)
+    {
+        if (currentUserId is not { } userId) return;
+
+        var result = OrderService.CancelOrderByCustomer(orderId, userId);
+        cancellingOrderId = orderId;
+        if (result.Success)
+        {
+            cancelError = null;
+            orders = OrderService.GetOrdersForUser(userId);
+        }
+        else
+        {
+            cancelError = result.Error;
+        }
+    }
+
+    private static string GetStatusClass(string status) => status switch
+    {
+        "Chờ xác nhận" => "pending",
+        "Đã xác nhận" => "confirmed",
+        "Đang giao" => "shipping",
+        "Đã giao" => "completed",
+        "Đã hủy" => "cancelled",
+        _ => "pending"
+    };
+
+    private Order? detailOrder;
+    private bool showDetailModal;
+
+    private void OpenOrderDetail(Order order)
+    {
+        detailOrder = order;
+        showDetailModal = true;
+    }
+
+    private void CloseOrderDetail()
+    {
+        showDetailModal = false;
+        detailOrder = null;
+    }
+}

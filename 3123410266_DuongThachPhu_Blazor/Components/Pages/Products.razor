@@ -1,0 +1,306 @@
+@page "/products"
+@rendermode InteractiveServer
+
+<PageTitle>Bộ sưu tập iPhone - Phú Store</PageTitle>
+
+<div class="page-header-wrap">
+    <div class="breadcrumb-nav">
+        <a href="/">Trang chủ</a>
+        <span class="sep">/</span>
+        <span class="current">Tất cả sản phẩm iPhone</span>
+    </div>
+    <span class="section-eyebrow">DANH MỤC CHÍNH HÃNG VN/A</span>
+    <h1 class="page-title">Tất Cả Sản Phẩm iPhone</h1>
+    <p class="page-desc">
+        Khám phá toàn bộ các thế hệ iPhone chính hãng Apple với đầy đủ dung lượng và màu sắc. Bảo hành 12 tháng tại các trung tâm bảo hành Apple trên toàn quốc.
+    </p>
+</div>
+
+<!-- Toolbar: Search, Filters & Sorting -->
+<div class="catalog-control-panel">
+    <!-- Top row: Search and sort -->
+    <div class="control-top-row">
+        <div class="search-input-wrapper">
+            <span class="search-lens">🔍</span>
+            <input @bind="searchTerm" 
+                   @bind:event="oninput" 
+                   @bind:after="OnSearchChanged" 
+                   placeholder="Tìm kiếm iPhone 16, Pro Max, 128GB..." 
+                   class="search-input" />
+            @if (!string.IsNullOrEmpty(searchTerm))
+            {
+                <button class="clear-search-btn" @onclick="ClearSearch" title="Xóa tìm kiếm">✕</button>
+            }
+        </div>
+
+        <div class="sort-control">
+            <label class="sort-label">Sắp xếp theo:</label>
+            <select class="sort-select" @bind="sortBy" @bind:after="ResetPage">
+                <option value="featured">Nổi bật nhất</option>
+                <option value="price-asc">Giá: Thấp đến cao</option>
+                <option value="price-desc">Giá: Cao đến thấp</option>
+                <option value="name-asc">Tên: A → Z</option>
+                <option value="name-desc">Tên: Z → A</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Category selector pills -->
+    <div class="category-tabs-row">
+        <button class="cat-pill-btn @(selectedCategory == AllCategory ? "active" : "")" 
+                @onclick="() => SelectCategory(AllCategory)">
+            Tất cả (@Catalog.Products.Count)
+        </button>
+        @foreach (var category in Categories)
+        {
+            var catCount = Catalog.Products.Count(p => p.Category == category);
+            <button class="cat-pill-btn @(selectedCategory == category ? "active" : "")" 
+                    @onclick="() => SelectCategory(category)">
+                @category (@catCount)
+            </button>
+        }
+    </div>
+
+    <!-- Price range quick filter -->
+    <div class="price-filter-row">
+        <span class="filter-label">Mức giá:</span>
+        <button class="price-chip @(priceFilter == "all" ? "active" : "")" @onclick="@(() => SetPriceFilter("all"))">Tất cả mức giá</button>
+        <button class="price-chip @(priceFilter == "under-15" ? "active" : "")" @onclick="@(() => SetPriceFilter("under-15"))">Dưới 15 triệu</button>
+        <button class="price-chip @(priceFilter == "15-25" ? "active" : "")" @onclick="@(() => SetPriceFilter("15-25"))">15 - 25 triệu</button>
+        <button class="price-chip @(priceFilter == "above-25" ? "active" : "")" @onclick="@(() => SetPriceFilter("above-25"))">Trên 25 triệu</button>
+    </div>
+</div>
+
+<!-- Results count & active tags info -->
+<div class="results-summary">
+    <span>Tìm thấy <b>@FilteredProducts.Count()</b> sản phẩm phù hợp</span>
+    @if (selectedCategory != AllCategory || !string.IsNullOrWhiteSpace(searchTerm) || priceFilter != "all")
+    {
+        <button class="btn-reset-filters" @onclick="ResetAllFilters">✕ Xóa tất cả bộ lọc</button>
+    }
+</div>
+
+<!-- Product Grid -->
+@if (PagedProducts.Any())
+{
+    <div class="product-grid">
+        @foreach (var product in PagedProducts)
+        {
+            <article class="product-card">
+                <div class="card-badge-wrap">
+                    @if (product.IsPopular)
+                    {
+                        <span class="badge-hot">🔥 NỔI BẬT</span>
+                    }
+                    <span class="badge-vna">VN/A</span>
+                </div>
+                <a class="card-img-link" href="@($"/products/{product.Id}")">
+                    <img src="@product.ImageUrl" alt="@product.Name" class="product-thumbnail" loading="lazy" />
+                    <span class="img-emoji-fallback">@product.Emoji</span>
+                </a>
+                <div class="card-body">
+                    <span class="product-cat-name">@product.Category</span>
+                    <h3 class="product-name">
+                        <a href="@($"/products/{product.Id}")">@product.Name</a>
+                    </h3>
+                    <p class="product-short-desc">@product.Description</p>
+                    <div class="product-price-row">
+                        <div class="price-stack">
+                            <span class="price-currency">Chính hãng Apple</span>
+                            <strong class="current-price">@product.Price.ToString("N0")₫</strong>
+                        </div>
+                        <button class="btn-add-cart-circle" @onclick="() => AddToCart(product)" title="Thêm vào giỏ" aria-label="Thêm @product.Name vào giỏ">
+                            <span>+</span>
+                        </button>
+                    </div>
+                    <div class="card-footer-action">
+                        <a class="btn-view-detail" href="@($"/products/{product.Id}")">Xem chi tiết</a>
+                    </div>
+                </div>
+            </article>
+        }
+    </div>
+
+    <!-- Pagination -->
+    @if (TotalPages > 1)
+    {
+        <div class="pagination-wrapper">
+            <button class="page-nav-btn" disabled="@(currentPage == 1)" @onclick="PreviousPage" title="Trang trước">
+                ← Trước
+            </button>
+            <div class="page-numbers">
+                @for (var p = 1; p <= TotalPages; p++)
+                {
+                    var pageNum = p;
+                    <button class="page-num-btn @(currentPage == pageNum ? "active" : "")" @onclick="() => GoToPage(pageNum)">
+                        @pageNum
+                    </button>
+                }
+            </div>
+            <button class="page-nav-btn" disabled="@(currentPage == TotalPages)" @onclick="NextPage" title="Trang tiếp">
+                Sau →
+            </button>
+        </div>
+    }
+}
+else
+{
+    <div class="empty-results-box">
+        <div class="empty-icon">🔎</div>
+        <h2>Không tìm thấy sản phẩm phù hợp</h2>
+        <p>Không có sản phẩm nào khớp với tìm kiếm "<b>@searchTerm</b>" hoặc bộ lọc hiện tại.</p>
+        <button class="btn-apple-primary" @onclick="ResetAllFilters">
+            <span>Đặt lại bộ lọc</span>
+            <span>↺</span>
+        </button>
+    </div>
+}
+
+<!-- Toast Notification -->
+@if (!string.IsNullOrEmpty(toastMessage))
+{
+    <div class="apple-toast" role="status">
+        <span class="toast-icon">✓</span>
+        <div class="toast-body">
+            <strong>Giỏ hàng</strong>
+            <span>@toastMessage</span>
+        </div>
+        <a class="toast-link" href="/cart">Xem giỏ →</a>
+    </div>
+}
+
+@code {
+    [Inject] private CartService Cart { get; set; } = default!;
+    [Inject] private ProductCatalog Catalog { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Cart.AttachAsync(JS);
+        }
+    }
+
+    private const string AllCategory = "Tất cả";
+    private string searchTerm = "";
+    private string selectedCategory = AllCategory;
+    private string priceFilter = "all";
+    private string sortBy = "featured";
+    private int currentPage = 1;
+    private const int PageSize = 6;
+    private string? toastMessage;
+    private CancellationTokenSource? toastCts;
+
+    private IEnumerable<string> Categories =>
+        Catalog.Categories.Select(c => c.Name);
+
+    private IEnumerable<Product> FilteredProducts
+    {
+        get
+        {
+            var query = Catalog.Products.AsEnumerable();
+
+            // Category filter
+            if (selectedCategory != AllCategory)
+            {
+                query = query.Where(p => string.Equals(p.Category, selectedCategory, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Search filter
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                query = query.Where(p =>
+                    p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    p.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    p.Category.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Price range filter
+            query = priceFilter switch
+            {
+                "under-15" => query.Where(p => p.Price < 15_000_000),
+                "15-25" => query.Where(p => p.Price >= 15_000_000 && p.Price <= 25_000_000),
+                "above-25" => query.Where(p => p.Price > 25_000_000),
+                _ => query
+            };
+
+            // Sorting
+            query = sortBy switch
+            {
+                "price-asc" => query.OrderBy(p => p.Price),
+                "price-desc" => query.OrderByDescending(p => p.Price),
+                "name-asc" => query.OrderBy(p => p.Name),
+                "name-desc" => query.OrderByDescending(p => p.Name),
+                "featured" => query.OrderByDescending(p => p.IsPopular).ThenByDescending(p => p.Id),
+                _ => query
+            };
+
+            return query;
+        }
+    }
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredProducts.Count() / (double)PageSize));
+
+    private IEnumerable<Product> PagedProducts =>
+        FilteredProducts.Skip((currentPage - 1) * PageSize).Take(PageSize);
+
+    private void SelectCategory(string category)
+    {
+        selectedCategory = category;
+        currentPage = 1;
+    }
+
+    private void SetPriceFilter(string range)
+    {
+        priceFilter = range;
+        currentPage = 1;
+    }
+
+    private void OnSearchChanged()
+    {
+        currentPage = 1;
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = "";
+        currentPage = 1;
+    }
+
+    private void ResetPage()
+    {
+        currentPage = 1;
+    }
+
+    private void ResetAllFilters()
+    {
+        searchTerm = "";
+        selectedCategory = AllCategory;
+        priceFilter = "all";
+        sortBy = "featured";
+        currentPage = 1;
+    }
+
+    private void GoToPage(int page) =>
+        currentPage = Math.Clamp(page, 1, TotalPages);
+
+    private void PreviousPage() => GoToPage(currentPage - 1);
+    private void NextPage() => GoToPage(currentPage + 1);
+
+    private async Task AddToCart(Product product)
+    {
+        Cart.Add(product);
+        toastCts?.Cancel();
+        toastCts = new CancellationTokenSource();
+        var token = toastCts.Token;
+
+        toastMessage = $"Đã thêm {product.Name} vào giỏ hàng.";
+        try
+        {
+            await Task.Delay(2500, token);
+            toastMessage = null;
+        }
+        catch (TaskCanceledException) { }
+    }
+}

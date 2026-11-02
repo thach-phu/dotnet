@@ -1,0 +1,73 @@
+@model MVC.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập Quản trị - Phú Store";
+    Layout = "_Layout";
+    var showNotAdminMessage = User.Identity?.IsAuthenticated == true && ViewData.ModelState.IsValid;
+}
+
+<div class="login-page-container py-5">
+    <div class="login-box-card mx-auto p-4 p-md-5 bg-white border rounded-4 shadow-sm" style="max-width: 480px;">
+        <div class="login-header-section text-center mb-4">
+            <div class="login-brand-logo mb-2">
+                <span class="apple-symbol fs-1 text-dark"></span>
+            </div>
+            <span class="text-primary small fw-bold text-uppercase letter-spacing-1">KHU VỰC QUẢN TRỊ VIÊN</span>
+            <h1 class="login-main-title fs-3 fw-bold mt-1 mb-2">Đăng Nhập Quản Trị</h1>
+            <p class="login-subtext text-muted small">
+                Đăng nhập tài khoản để quản lý danh mục sản phẩm, đơn hàng và doanh số cửa hàng.
+            </p>
+        </div>
+
+        @if (showNotAdminMessage)
+        {
+            <div class="alert alert-warning rounded-3 py-3 px-3 small text-center">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                Tài khoản này không có quyền quản trị.
+            </div>
+            <div class="text-center mt-3 d-flex justify-content-center gap-3">
+                <a href="/" class="text-primary fw-bold text-decoration-none">← Quay lại trang chủ</a>
+                <form method="post" asp-controller="Account" asp-action="Logout" class="d-inline m-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="text-decoration-none border-0 bg-transparent text-primary fw-bold p-0" style="cursor:pointer;">Đăng xuất để đổi tài khoản</button>
+                </form>
+            </div>
+        }
+        else
+        {
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""]?.Errors.Count > 0)
+            {
+                <div class="alert alert-danger rounded-3 py-2 px-3 small mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    @Html.ValidationSummary(true, "")
+                </div>
+            }
+
+            <form method="post" asp-action="Login" asp-controller="Admin">
+                <input type="hidden" asp-for="ReturnUrl" />
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label small fw-semibold text-secondary">Email quản trị</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope"></i></span>
+                        <input asp-for="Email" id="emailInput" class="form-control border-start-0 ps-0" placeholder="name@example.com" required />
+                    </div>
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Password" class="form-label small fw-semibold text-secondary">Mật khẩu quản trị</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock"></i></span>
+                        <input asp-for="Password" id="passwordInput" type="password" class="form-control border-start-0 ps-0" placeholder="Nhập mật khẩu..." required />
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <button type="submit" class="btn-apple-primary w-100 py-3 text-center justify-content-center fs-6 fw-bold">
+                    <span>Đăng nhập hệ thống</span>
+                    <span class="ms-1">→</span>
+                </button>
+            </form>
+        }
+    </div>
+</div>

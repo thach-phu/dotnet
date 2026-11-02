@@ -1,0 +1,54 @@
+@page "{id:int}"
+@model AspRazorPageProduct.Pages.Admin.Products.DeleteModel
+@{
+    ViewData["Title"] = "Xác Nhận Xóa Sản Phẩm - TechStore Admin";
+}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-page="/Index" class="text-decoration-none text-muted">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a asp-page="/Admin/Products/Index" class="text-decoration-none text-muted">Quản trị sản phẩm</a></li>
+        <li class="breadcrumb-item active text-danger fw-bold" aria-current="page">Xóa sản phẩm</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center my-4">
+    <div class="col-md-7 col-lg-6">
+        <div class="card border-0 rounded-4 shadow-sm p-4 p-md-5 bg-white text-center">
+            <div class="display-3 text-danger mb-3">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h3 class="fw-bold mb-2 text-dark">Xác Nhận Xóa Sản Phẩm</h3>
+            <p class="text-muted small mb-4">Bạn có chắc chắn muốn xóa sản phẩm này khỏi hệ thống? Dữ liệu bị xóa không thể khôi phục.</p>
+
+            @if (Model.Product != null)
+            {
+                <div class="card bg-light border rounded-3 p-3 mb-4 text-start">
+                    <div class="d-flex align-items-center">
+                        <img src="@Model.Product.ImageUrl" alt="@Model.Product.Name" class="rounded-3 object-fit-contain bg-white p-1 me-3 border" style="width: 70px; height: 70px;" onerror="this.src='https://placehold.co/100x100?text=TechStore';" />
+                        <div>
+                            <h6 class="fw-bold mb-1 text-dark">@Model.Product.Name</h6>
+                            <p class="mb-0 text-muted small">
+                                Danh mục: <span class="badge bg-secondary-subtle text-secondary">@Model.Product.Category</span> | 
+                                Giá: <span class="text-danger fw-bold font-monospace">@Model.Product.Price.ToString("N0")₫</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    <input type="hidden" name="id" value="@Model.Product.Id" />
+                    <div class="d-flex justify-content-center gap-3">
+                        <a asp-page="/Admin/Products/Index" class="btn btn-outline-secondary rounded-pill px-4 py-2">
+                            Hủy bỏ
+                        </a>
+                        <button type="submit" class="btn btn-danger rounded-pill px-4 py-2 fw-bold">
+                            <i class="bi bi-trash me-1"></i> Xác nhận Xóa
+                        </button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,33 @@
+@inherits LayoutComponentBase
+
+<div class="admin-app-shell">
+    <header class="admin-topbar">
+        <div class="d-flex align-items-center gap-3">
+            <a class="admin-topbar-brand" href="/admin">
+                <span class="fs-4 me-1"></span>
+                <span>Phú Store <strong>Admin</strong></span>
+            </a>
+            <a href="/" target="_blank" class="admin-store-link" title="Mở trang bán hàng">
+                <i class="bi bi-shop"></i> Xem cửa hàng
+            </a>
+        </div>
+        <div class="admin-topbar-actions">
+            <AuthorizeView>
+                <Authorized>
+                    <span class="admin-topbar-user">
+                        <i class="bi bi-person-circle"></i> @context.User.Identity?.Name
+                    </span>
+                    <form method="post" action="/logout" class="d-inline m-0">
+                        <button type="submit" class="admin-topbar-logout">
+                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                        </button>
+                    </form>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+    </header>
+
+    <main class="admin-main-content admin-main-content-flush">
+        @Body
+    </main>
+</div>

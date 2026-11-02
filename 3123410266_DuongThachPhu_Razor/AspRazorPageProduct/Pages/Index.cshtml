@@ -1,0 +1,318 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Trang Chủ - TechStore Vietnam";
+}
+
+<!-- High-Tech Hero Banner -->
+<section class="ts-hero-banner">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <span class="ts-hero-eyebrow">
+                <i class="bi bi-stars"></i> CÔNG NGHỆ ĐỈNH CAO 2026
+            </span>
+            <h1 class="ts-hero-title">
+                Khám Phá Thiết Bị Số &amp;<br />
+                <span class="highlight">Hệ Sinh Thái Flagship.</span>
+            </h1>
+            <p class="ts-hero-subtitle">
+                Hơn 30+ mẫu sản phẩm công nghệ hàng đầu từ Apple, ASUS, Dell, Lenovo, Samsung và Sony. Bảo hành chính hãng 12 tháng, đổi trả 1-1 nhanh chóng.
+            </p>
+
+            <!-- Search Bar in Hero -->
+            <form method="get" class="ts-search-wrapper mb-3">
+                <input type="hidden" name="Category" value="@Model.Category" />
+                <input type="hidden" name="SortBy" value="@Model.SortBy" />
+                <input type="hidden" name="PageSize" value="@Model.PageSize" />
+                <input type="hidden" name="PageIndex" value="1" />
+                <div class="input-group shadow-lg">
+                    <input type="text" asp-for="Search" class="form-control ts-search-input" placeholder="Tìm kiếm laptop, điện thoại, phụ kiện, chip xử lý..." />
+                    <button class="btn ts-search-btn" type="submit">
+                        <i class="bi bi-search me-1"></i> Tìm kiếm
+                    </button>
+                </div>
+            </form>
+
+            <div class="d-flex flex-wrap gap-2 pt-2">
+                <span class="badge bg-white bg-opacity-10 text-light border border-light border-opacity-10 rounded-pill px-3 py-2 small">
+                    🔥 Giảm thêm 500k khi quét VietQR
+                </span>
+                <span class="badge bg-white bg-opacity-10 text-light border border-light border-opacity-10 rounded-pill px-3 py-2 small">
+                    ⚡ Giao nhanh 2H nội thành
+                </span>
+            </div>
+        </div>
+
+        <div class="col-lg-5 d-none d-lg-block">
+            <div class="ts-hero-showcase">
+                <div class="ts-hero-card-glow"></div>
+                <div class="ts-hero-glass-card">
+                    <div class="ts-glass-header">
+                        <div class="ts-glass-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span class="ts-glass-tag"><i class="bi bi-award-fill text-warning me-1"></i> TechStore Premium</span>
+                    </div>
+                    
+                    <div class="ts-glass-body">
+                        <div class="ts-showcase-icon-box">
+                            <i class="bi bi-laptop-fill"></i>
+                        </div>
+                        <h4 class="ts-showcase-title">Hệ Sinh Thái Công Nghệ</h4>
+                        <p class="ts-showcase-desc">Sản phẩm chính hãng VN/A • Chip M3 &amp; Intel Ultra • Trả góp 0% duyệt ngay</p>
+                        
+                        <div class="ts-showcase-stats">
+                            <div class="ts-stat-item">
+                                <span class="ts-stat-num">30+</span>
+                                <span class="ts-stat-lbl">Thiết bị</span>
+                            </div>
+                            <div class="ts-stat-item">
+                                <span class="ts-stat-num">100%</span>
+                                <span class="ts-stat-lbl">Chính hãng</span>
+                            </div>
+                            <div class="ts-stat-item">
+                                <span class="ts-stat-num">4.9★</span>
+                                <span class="ts-stat-lbl">Đánh giá</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-hero-floating-pill pill-one">
+                        <i class="bi bi-shield-fill-check text-success"></i>
+                        <span>Bảo hành 12T 1 đổi 1</span>
+                    </div>
+
+                    <div class="ts-hero-floating-pill pill-two">
+                        <i class="bi bi-lightning-charge-fill text-warning"></i>
+                        <span>Giao siêu tốc 2H</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Trust Features Banner -->
+<div class="ts-trust-grid">
+    <div class="ts-trust-item">
+        <div class="ts-trust-icon text-primary">
+            <i class="bi bi-shield-check"></i>
+        </div>
+        <div class="ts-trust-text">
+            <h5>100% Chính Hãng</h5>
+            <p>Cam kết nguồn gốc và bảo hành uy tín</p>
+        </div>
+    </div>
+    <div class="ts-trust-item">
+        <div class="ts-trust-icon text-success">
+            <i class="bi bi-truck"></i>
+        </div>
+        <div class="ts-trust-text">
+            <h5>Giao Hàng Miễn Phí</h5>
+            <p>Áp dụng cho mọi đơn từ 2.000.000₫</p>
+        </div>
+    </div>
+    <div class="ts-trust-item">
+        <div class="ts-trust-icon text-warning">
+            <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <div class="ts-trust-text">
+            <h5>1 Đổi 1 Trong 30 Ngày</h5>
+            <p>Lỗi phần cứng đổi mới tận nhà</p>
+        </div>
+    </div>
+    <div class="ts-trust-item">
+        <div class="ts-trust-icon text-info">
+            <i class="bi bi-credit-card-2-front"></i>
+        </div>
+        <div class="ts-trust-text">
+            <h5>Trả Góp 0% Lãi Suất</h5>
+            <p>Duyệt hồ sơ online chỉ trong 5 phút</p>
+        </div>
+    </div>
+</div>
+
+<!-- Filter & Sort Bar -->
+<div class="ts-filter-card">
+    <form method="get" class="row g-3 align-items-center">
+        <input type="hidden" name="Search" value="@Model.Search" />
+        <input type="hidden" name="PageSize" value="@Model.PageSize" />
+        <input type="hidden" name="PageIndex" value="1" />
+        
+        <div class="col-lg-8 d-flex flex-wrap gap-2 align-items-center">
+            <span class="fw-bold small text-secondary me-2"><i class="bi bi-funnel-fill text-primary"></i> Danh mục:</span>
+            <a asp-page="/Index" asp-route-Search="@Model.Search" asp-route-SortBy="@Model.SortBy" asp-route-PageSize="@Model.PageSize" asp-route-PageIndex="1"
+               class="ts-cat-pill @(string.IsNullOrEmpty(Model.Category) || Model.Category == "Tất cả" ? "active" : "")">
+                Tất cả
+            </a>
+            @foreach (var cat in Model.Categories)
+            {
+                <a asp-page="/Index" asp-route-Category="@cat" asp-route-Search="@Model.Search" asp-route-SortBy="@Model.SortBy" asp-route-PageSize="@Model.PageSize" asp-route-PageIndex="1"
+                   class="ts-cat-pill @(Model.Category == cat ? "active" : "")">
+                    @cat
+                </a>
+            }
+        </div>
+
+        <div class="col-lg-4 ms-auto text-lg-end d-flex align-items-center justify-content-lg-end gap-2">
+            <label class="form-label mb-0 small fw-bold text-nowrap text-secondary" for="sortSelect">Sắp xếp:</label>
+            <select name="SortBy" id="sortSelect" class="form-select form-select-sm rounded-pill shadow-none w-auto border-secondary-subtle" onchange="this.form.submit()">
+                <option value="">Mới nhất</option>
+                <option value="price_asc" selected="@(Model.SortBy == "price_asc")">Giá: Thấp đến Cao</option>
+                <option value="price_desc" selected="@(Model.SortBy == "price_desc")">Giá: Cao đến Thấp</option>
+                <option value="name_asc" selected="@(Model.SortBy == "name_asc")">Tên A-Z</option>
+                <option value="name_desc" selected="@(Model.SortBy == "name_desc")">Tên Z-A</option>
+            </select>
+        </div>
+    </form>
+</div>
+
+<!-- Counter Info -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-muted small fw-medium">
+        @if (Model.Products.TotalCount > 0)
+        {
+            int startItem = (Model.Products.PageIndex - 1) * Model.Products.PageSize + 1;
+            int endItem = Math.Min(Model.Products.PageIndex * Model.Products.PageSize, Model.Products.TotalCount);
+            <span>Hiển thị <strong>@startItem - @endItem</strong> trên tổng số <strong>@Model.Products.TotalCount</strong> sản phẩm</span>
+        }
+    </div>
+    
+    @if (!string.IsNullOrEmpty(Model.Search) || (!string.IsNullOrEmpty(Model.Category) && Model.Category != "Tất cả"))
+    {
+        <a asp-page="/Index" class="small text-danger text-decoration-none fw-semibold">
+            ✕ Bỏ lọc tìm kiếm
+        </a>
+    }
+</div>
+
+@if (!Model.Products.Any())
+{
+    <div class="card border-0 rounded-4 shadow-sm text-center py-5 bg-white">
+        <div class="card-body">
+            <div class="display-1 text-muted mb-3"><i class="bi bi-box2"></i></div>
+            <h4 class="fw-bold">Không tìm thấy sản phẩm phù hợp</h4>
+            <p class="text-muted mb-4">Vui lòng thử lại với từ khóa khác hoặc bỏ chọn bộ lọc danh mục.</p>
+            <a asp-page="/Index" class="ts-btn-primary px-4 py-2">
+                <span>Xem tất cả sản phẩm</span>
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Products Grid -->
+    <div class="ts-product-grid">
+        @foreach (var item in Model.Products)
+        {
+            <article class="ts-product-card">
+                <!-- Media / Image Wrap -->
+                <div class="ts-card-media">
+                    <div class="ts-card-badges">
+                        <span class="ts-badge-cat">@item.Category</span>
+                        @if (item.Stock > 0)
+                        {
+                            <span class="ts-badge-stock">Còn @item.Stock</span>
+                        }
+                        else
+                        {
+                            <span class="ts-badge-stock bg-danger">Hết hàng</span>
+                        }
+                    </div>
+                    
+                    <a asp-page="/Details" asp-route-id="@item.Id" class="w-100 h-100 d-grid place-items-center">
+                        <img src="@item.ImageUrl" alt="@item.Name" class="ts-card-img" loading="lazy" onerror="this.src='https://placehold.co/400x400?text=TechStore';" />
+                    </a>
+                </div>
+
+                <!-- Card Content -->
+                <div class="ts-card-content">
+                    <div class="d-flex align-items-center text-warning small mb-1">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <span class="text-muted ms-1" style="font-size: 0.72rem;">(4.9)</span>
+                    </div>
+
+                    <h3 class="ts-product-title">
+                        <a asp-page="/Details" asp-route-id="@item.Id" class="text-dark text-decoration-none">
+                            @item.Name
+                        </a>
+                    </h3>
+
+                    <p class="ts-product-desc">
+                        @item.Description
+                    </p>
+
+                    <div class="ts-card-price-row">
+                        <div>
+                            <span class="ts-current-price">@item.Price.ToString("N0")₫</span>
+                        </div>
+                        <div>
+                            <span class="ts-original-price">@((item.Price * 1.12m).ToString("N0"))₫</span>
+                        </div>
+                    </div>
+
+                    <div class="ts-card-actions">
+                        <a asp-page="/Details" asp-route-id="@item.Id" class="ts-btn-detail">
+                            Chi tiết
+                        </a>
+                        <form method="post" asp-page-handler="AddToCart" asp-route-id="@item.Id" class="flex-fill m-0">
+                            <button type="submit" class="ts-btn-add-cart w-100" @(item.Stock <= 0 ? "disabled" : "") title="Thêm vào giỏ hàng">
+                                <i class="bi bi-bag-plus"></i>
+                                <span>Thêm</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+        }
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.Products.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="mt-4 mb-5">
+            <ul class="pagination justify-content-center gap-1">
+                <li class="page-item @(!Model.Products.HasPreviousPage ? "disabled" : "")">
+                    <a class="page-link rounded-pill px-3" asp-page="/Index"
+                       asp-route-PageIndex="@(Model.Products.PageIndex - 1)"
+                       asp-route-Search="@Model.Search"
+                       asp-route-Category="@Model.Category"
+                       asp-route-SortBy="@Model.SortBy"
+                       asp-route-PageSize="@Model.PageSize">
+                        ← Trước
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= Model.Products.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.Products.PageIndex ? "active" : "")">
+                        <a class="page-link rounded-circle text-center mx-1" style="width: 40px; height: 40px; line-height: 24px;"
+                           asp-page="/Index"
+                           asp-route-PageIndex="@i"
+                           asp-route-Search="@Model.Search"
+                           asp-route-Category="@Model.Category"
+                           asp-route-SortBy="@Model.SortBy"
+                           asp-route-PageSize="@Model.PageSize">
+                            @i
+                        </a>
+                    </li>
+                }
+
+                <li class="page-item @(!Model.Products.HasNextPage ? "disabled" : "")">
+                    <a class="page-link rounded-pill px-3" asp-page="/Index"
+                       asp-route-PageIndex="@(Model.Products.PageIndex + 1)"
+                       asp-route-Search="@Model.Search"
+                       asp-route-Category="@Model.Category"
+                       asp-route-SortBy="@Model.SortBy"
+                       asp-route-PageSize="@Model.PageSize">
+                        Sau →
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+}

@@ -1,0 +1,188 @@
+@model MVC.Models.CartViewModel
+@{
+    ViewData["Title"] = "Giỏ hàng & Đặt hàng - Phú Store";
+}
+
+<div class="breadcrumb-nav">
+    <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+    <span class="sep">/</span>
+    <span class="current">Giỏ hàng của bạn</span>
+</div>
+
+@if (!Model.Items.Any())
+{
+    <!-- Empty Cart Screen -->
+    <div class="empty-cart-container text-center py-5">
+        <div class="empty-cart-graphic mb-4">
+            <span class="bag-icon display-1">🛍️</span>
+        </div>
+        <h2 class="empty-title fw-bold">Giỏ hàng của bạn đang trống</h2>
+        <p class="empty-subtitle text-muted mb-4">
+            Hãy khám phá các mẫu iPhone chính hãng VN/A mới nhất để lựa chọn sản phẩm phù hợp.
+        </p>
+        <a class="btn-apple-primary px-5 py-3 fs-6" asp-controller="Products" asp-action="Index">
+            <span>Khám phá sản phẩm ngay</span>
+            <span class="arrow-icon">→</span>
+        </a>
+    </div>
+}
+else
+{
+    <div class="cart-page-layout">
+        <div class="cart-main-grid">
+            <!-- Left: List of Items in Cart -->
+            <div class="cart-items-section">
+                <div class="cart-section-header d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="cart-title m-0">Sản phẩm đã chọn (@Model.Items.Sum(i => i.Quantity))</h2>
+                    <a asp-controller="Products" asp-action="Index" class="continue-shopping-link small text-primary text-decoration-none fw-semibold">
+                        + Thêm sản phẩm khác
+                    </a>
+                </div>
+
+                <div class="cart-items-list">
+                    <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4 mb-3">
+                        <div class="d-flex align-items-center gap-2 text-success fw-bold small mb-2">
+                            <span>⚡</span>
+                            <span>Đơn hàng của bạn đủ điều kiện nhận <b>Miễn Phí Vận Chuyển Hỏa Tốc</b> toàn quốc!</span>
+                        </div>
+                        <div class="progress rounded-pill bg-success bg-opacity-25" style="height: 6px;">
+                            <div class="progress-bar bg-success" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    @foreach (var line in Model.Items)
+                    {
+                        <div class="cart-item-card p-3 mb-3 bg-white border rounded-4 shadow-sm">
+                            <div class="item-img-col">
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@line.Product.Id" class="item-img-link">
+                                    @if (!string.IsNullOrWhiteSpace(line.Product.ImageUrl))
+                                    {
+                                        <img src="@line.Product.ImageUrl" alt="@line.Product.Name" class="item-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+                                    }
+                                    <span class="img-emoji-fallback item-fallback" style="@(string.IsNullOrWhiteSpace(line.Product.ImageUrl) ? "display:block" : null)">@line.Product.Emoji</span>
+                                </a>
+                            </div>
+
+                            <div class="item-info-col flex-grow-1 px-3">
+                                <span class="item-category text-muted small text-uppercase fw-bold">@line.Product.Category</span>
+                                <h3 class="item-name fs-6 fw-bold mb-1">
+                                    <a asp-controller="Products" asp-action="Details" asp-route-id="@line.Product.Id" class="text-dark text-decoration-none">
+                                        @line.Product.Name
+                                    </a>
+                                </h3>
+                                <div class="item-unit-price text-muted small mb-2">
+                                    Đơn giá: @line.Product.Price.ToString("N0")₫
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between mt-2 flex-wrap gap-2">
+                                    <!-- Stepper Form -->
+                                    <form asp-action="Update" method="post" class="d-inline-flex align-items-center gap-1 m-0">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@line.Product.Id" />
+                                        <button type="submit" name="quantity" value="@(line.Quantity - 1)" class="btn btn-sm btn-outline-secondary rounded-circle" style="width: 28px; height: 28px; line-height: 1;" title="Giảm">
+                                            -
+                                        </button>
+                                        <span class="px-2 fw-bold">@line.Quantity</span>
+                                        <button type="submit" name="quantity" value="@(line.Quantity + 1)" class="btn btn-sm btn-outline-secondary rounded-circle" style="width: 28px; height: 28px; line-height: 1;" title="Tăng">
+                                            +
+                                        </button>
+                                    </form>
+
+                                    <!-- Subtotal -->
+                                    <div class="item-total-col text-end">
+                                        <strong class="item-total-price text-primary fs-6">@line.Total.ToString("N0")₫</strong>
+                                    </div>
+
+                                    <!-- Remove Button -->
+                                    <form asp-action="Remove" method="post" class="m-0">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@line.Product.Id" />
+                                        <button type="submit" class="btn btn-sm btn-link text-danger text-decoration-none p-0 ms-2" title="Xóa khỏi giỏ">
+                                            🗑️ Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="cart-shipping-notice alert alert-info rounded-4 border-0 shadow-sm mt-3">
+                    <div class="d-flex align-items-center">
+                        <span class="fs-4 me-2">🚚</span>
+                        <div>
+                            <strong>Ưu đãi vận chuyển:</strong> Miễn phí giao hàng toàn quốc cho đơn hàng từ 500.000₫. Giao hàng hỏa tốc trong 2 giờ tại TP.HCM & Hà Nội.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Checkout & Total Summary -->
+            <div class="cart-summary-section">
+                <div class="summary-card p-4 bg-white border rounded-4 shadow-sm sticky-top" style="top: 20px;">
+                    <h3 class="summary-title fs-5 fw-bold mb-3 pb-2 border-bottom">Tóm tắt đơn hàng</h3>
+
+                    <div class="summary-line d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tạm tính:</span>
+                        <strong class="text-dark">@Model.SubTotal.ToString("N0")₫</strong>
+                    </div>
+
+                    <div class="summary-line d-flex justify-content-between mb-2">
+                        <span class="text-muted">Phí giao hàng:</span>
+                        @if (Model.Shipping == 0)
+                        {
+                            <span class="badge bg-success-subtle text-success fw-bold">Miễn phí toàn quốc</span>
+                        }
+                        else
+                        {
+                            <span class="text-dark fw-bold">@Model.Shipping.ToString("N0")₫</span>
+                        }
+                    </div>
+
+                    <div class="summary-divider my-3 border-top"></div>
+
+                    <div class="summary-total-line d-flex justify-content-between align-items-baseline mb-4">
+                        <span class="fs-6 fw-bold">Tổng thanh toán:</span>
+                        <strong class="summary-grand-total fs-4 text-primary">@Model.GrandTotal.ToString("N0")₫</strong>
+                    </div>
+
+                    <!-- Checkout Form -->
+                    <form asp-action="Checkout" method="post" class="checkout-form">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3"></div>
+                        <h4 class="checkout-form-title fs-6 fw-bold mb-3">Thông tin nhận hàng</h4>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small fw-semibold text-secondary">Họ và tên người nhận <span class="text-danger">*</span></label>
+                            <input name="CustomerName" class="form-control rounded-3" placeholder="Ví dụ: Nguyễn Văn A" required value="@User.Identity?.Name" />
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small fw-semibold text-secondary">Số điện thoại liên hệ <span class="text-danger">*</span></label>
+                            <input name="CustomerPhone" type="tel" class="form-control rounded-3" placeholder="Ví dụ: 0912345678" required />
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="form-label small fw-semibold text-secondary">Địa chỉ giao hàng chi tiết <span class="text-danger">*</span></label>
+                            <input name="Address" class="form-control rounded-3" placeholder="Số nhà, đường, phường, quận, TP..." required />
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Ghi chú giao hàng</label>
+                            <textarea name="Note" class="form-control rounded-3" rows="2" placeholder="Giao giờ hành chính, gọi trước khi đến..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-apple-primary w-100 py-3 text-center justify-content-center fs-6 fw-bold">
+                            <span>Xác nhận đặt hàng</span>
+                            <span class="ms-1">→</span>
+                        </button>
+                    </form>
+
+                    <div class="checkout-guarantee text-center mt-3 pt-3 border-top text-muted small">
+                        <span>🛡️ Cam kết: 100% Chính hãng VN/A • Kiểm hàng trước khi thanh toán</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

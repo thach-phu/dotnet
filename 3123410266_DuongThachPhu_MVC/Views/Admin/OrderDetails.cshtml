@@ -1,0 +1,158 @@
+@model MVC.Models.Order
+@{
+    ViewData["Title"] = $"Đơn hàng #{Model.OrderCode} - Phú Store Quản trị";
+    var validNextStatuses = (IReadOnlyList<string>)ViewBag.ValidNextStatuses;
+}
+
+<div class="breadcrumb-nav mb-4">
+    <a asp-controller="Admin" asp-action="Index">Quản trị</a>
+    <span class="sep">/</span>
+    <span class="current">Đơn hàng #@Model.OrderCode</span>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <span class="eyebrow text-primary fw-bold small text-uppercase">HỆ THỐNG ĐƠN HÀNG</span>
+        <h2 class="fs-4 fw-bold mb-0">Đơn hàng <span class="font-monospace text-primary">#@Model.OrderCode</span></h2>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" asp-route-tab="orders" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-1" onclick="window.print();">
+            <i class="bi bi-printer me-1"></i>In đơn hàng
+        </button>
+    </div>
+</div>
+
+@if (TempData["AdminSuccess"] is string successMessage)
+{
+    <div class="alert alert-success rounded-3 mb-4 py-2 px-3 small">
+        <i class="bi bi-check-circle-fill me-1"></i>@successMessage
+    </div>
+}
+@if (TempData["AdminError"] is string error)
+{
+    <div class="alert alert-danger rounded-3 mb-4 py-2 px-3 small">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>@error
+    </div>
+}
+
+<div class="card border-0 rounded-4 shadow-sm bg-white p-4 p-md-5 mb-4">
+    <div class="row g-4 pb-4 border-bottom">
+        <div class="col-md-4">
+            <div class="p-3 bg-light rounded-3 h-100 border">
+                <span class="text-muted small fw-bold text-uppercase d-block mb-1">
+                    <i class="bi bi-person-fill text-primary me-1"></i>Khách Hàng
+                </span>
+                <strong class="d-block fs-6 text-dark">@Model.CustomerName</strong>
+                <span class="text-muted small d-block"><i class="bi bi-telephone me-1"></i>@Model.CustomerPhone</span>
+                <span class="badge bg-secondary-subtle text-secondary mt-2">Thanh toán khi nhận hàng (COD)</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-light rounded-3 h-100 border">
+                <span class="text-muted small fw-bold text-uppercase d-block mb-1">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>Địa Chỉ Nhận Hàng
+                </span>
+                <p class="mb-1 text-dark small">@Model.CustomerAddress</p>
+                @if (!string.IsNullOrEmpty(Model.Note))
+                {
+                    <span class="text-muted small fst-italic d-block mt-2">
+                        <i class="bi bi-chat-left-text me-1"></i>Ghi chú: @Model.Note
+                    </span>
+                }
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-light rounded-3 h-100 border">
+                <span class="text-muted small fw-bold text-uppercase d-block mb-1">
+                    <i class="bi bi-calendar-event text-success me-1"></i>Thời Gian &amp; Trạng Thái
+                </span>
+                <span class="text-muted small d-block">Ngày đặt:</span>
+                <strong class="text-dark">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</strong>
+                <div class="mt-2">
+                    <partial name="_OrderStatusBadge" model="Model.Status" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items table -->
+    <h5 class="fw-bold fs-6 mt-4 mb-3">
+        <i class="bi bi-box-seam me-1 text-primary"></i>Danh sách iPhone trong đơn:
+    </h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-muted text-uppercase">
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th class="text-center">Số lượng</th>
+                    <th class="text-end">Đơn giá</th>
+                    <th class="text-end">Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            <strong class="text-dark">@item.ProductName</strong>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border px-2 py-1">@item.Quantity</span>
+                        </td>
+                        <td class="text-end text-muted font-monospace">@item.Price.ToString("N0")₫</td>
+                        <td class="text-end fw-bold font-monospace">@((item.Price * item.Quantity).ToString("N0"))₫</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-end text-muted small pt-3">Phí vận chuyển:</td>
+                    <td class="text-end text-success fw-bold small pt-3">
+                        @(Model.ShippingFee == 0 ? "Miễn phí" : $"{Model.ShippingFee:N0}₫")
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end fw-bold fs-6">Tổng giá trị đơn hàng:</td>
+                    <td class="text-end fw-bold text-danger fs-5 font-monospace">@Model.GrandTotal.ToString("N0")₫</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Timeline status -->
+    <div class="mt-4 pt-3 border-top">
+        <span class="text-muted small fw-bold text-uppercase d-block mb-2">Tiến độ giao dịch:</span>
+        <partial name="_OrderStatusPipeline" model="Model.Status" />
+    </div>
+
+    <!-- Status transition form -->
+    <div class="mt-4 p-3 bg-light rounded-3 border">
+        @if (validNextStatuses.Count > 0)
+        {
+            <form asp-action="UpdateOrder" method="post" class="d-flex gap-2 align-items-center flex-wrap" onsubmit="return confirm('Bạn có chắc muốn lưu thay đổi trạng thái này? Hành động không thể hoàn tác.');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <span class="small fw-bold text-secondary">Cập nhật trạng thái đơn:</span>
+                <select name="status" class="form-select form-select-sm rounded-3" style="max-width: 260px;">
+                    @foreach (var status in validNextStatuses)
+                    {
+                        <option value="@status">@status</option>
+                    }
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-check2-circle me-1"></i>Lưu trạng thái
+                </button>
+            </form>
+        }
+        else
+        {
+            <div class="d-flex align-items-center gap-2 text-muted small">
+                <i class="bi bi-info-circle"></i>
+                <span>Không có hành động chuyển trạng thái nào khả dụng cho đơn hàng này (Đơn đã hoàn tất hoặc đã hủy).</span>
+            </div>
+        }
+    </div>
+</div>

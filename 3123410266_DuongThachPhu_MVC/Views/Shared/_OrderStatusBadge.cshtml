@@ -1,0 +1,13 @@
+@model string
+@{
+    var cssClass = Model switch
+    {
+        "Chờ xác nhận" => "status-pending",
+        "Đã xác nhận" => "status-confirmed",
+        "Đang giao" => "status-shipping",
+        "Đã giao" => "status-completed",
+        "Đã hủy" => "status-cancelled",
+        _ => "status-pending",
+    };
+}
+<span class="order-status-badge @cssClass">@Model</span>
