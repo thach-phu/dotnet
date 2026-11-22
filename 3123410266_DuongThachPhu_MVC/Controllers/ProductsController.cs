@@ -8,7 +8,7 @@ public sealed class ProductsController(ProductCatalog catalog, SessionCart cart)
 {
     public IActionResult Index(string? search, string? category, int page = 1)
     {
-        const int pageSize = 8;
+        const int pageSize = 6;
         page = Math.Max(1, page);
         var products = catalog.Products.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(search))

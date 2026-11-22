@@ -6,6 +6,7 @@ namespace AspRazorPageProduct.Models
         public string CustomerName { get; set; } = string.Empty;
         public string CustomerPhone { get; set; } = string.Empty;
         public string CustomerEmail { get; set; } = string.Empty;
+        public int? UserId { get; set; }
         public string ShippingAddress { get; set; } = string.Empty;
         public string PaymentMethod { get; set; } = "COD"; // COD, Banking, MoMo
         public string? Notes { get; set; }

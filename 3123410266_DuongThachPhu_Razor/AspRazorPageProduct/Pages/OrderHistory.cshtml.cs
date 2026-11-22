@@ -13,17 +13,18 @@ namespace AspRazorPageProduct.Pages
         private readonly IOrderService _orders;
         public OrderHistoryModel(IOrderService orders) => _orders = orders;
         public List<Order> Orders { get; private set; } = [];
-        public void OnGet() => Orders = _orders.GetOrdersForCustomer(User.FindFirstValue(ClaimTypes.Email)!);
+        public void OnGet() => Orders = _orders.GetOrdersForCustomer(GetCurrentUserId());
 
         public IActionResult OnPostCancelOrder(string orderId)
         {
-            var email = User.FindFirstValue(ClaimTypes.Email)!;
-            var result = _orders.CancelOrderByCustomer(orderId, email);
+            var result = _orders.CancelOrderByCustomer(orderId, GetCurrentUserId());
             if (!result.Succeeded)
             {
                 TempData["CancelError"] = result.ErrorMessage;
             }
             return RedirectToPage();
         }
+
+        private int GetCurrentUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     }
 }

@@ -62,7 +62,7 @@ public sealed class AccountController(
         var principal = await claimsFactory.CreateAsync(user);
         if (Permissions.HasAnyAdminAccess(principal))
         {
-            ModelState.AddModelError("", "Tài khoản quản trị vui lòng đăng nhập tại trang quản trị (/admin/login).");
+            ModelState.AddModelError("", "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.");
             return View(input);
         }
 

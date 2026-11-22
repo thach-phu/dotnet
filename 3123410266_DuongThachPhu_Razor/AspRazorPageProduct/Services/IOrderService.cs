@@ -7,9 +7,9 @@ namespace AspRazorPageProduct.Services
         void CreateOrder(Order order);
         List<Order> GetAllOrders();
         Order? GetOrderById(string orderId);
-        List<Order> GetOrdersForCustomer(string email);
+        List<Order> GetOrdersForCustomer(int userId);
         OrderStatusUpdateResult UpdateStatus(string orderId, string status);
-        OrderStatusUpdateResult CancelOrderByCustomer(string orderId, string customerEmail);
+        OrderStatusUpdateResult CancelOrderByCustomer(string orderId, int userId);
         DashboardSummary GetDashboardSummary();
         IReadOnlyList<string> GetValidNextStatuses(string? currentStatus);
     }

@@ -40,6 +40,7 @@ namespace AspRazorPageProduct.Pages
             GrandTotal = _cartService.GetGrandTotal();
             Order.CustomerEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
             Order.CustomerName = User.Identity?.Name ?? string.Empty;
+            Order.UserId = GetCurrentUserId();
             return Page();
         }
 
@@ -101,12 +102,16 @@ namespace AspRazorPageProduct.Pages
 
             Order.Items = new List<CartItem>(CartItems);
             Order.CustomerEmail = User.FindFirstValue(ClaimTypes.Email) ?? Order.CustomerEmail;
+            Order.UserId = GetCurrentUserId();
             Order.TotalAmount = _cartService.GetGrandTotal();
-            
+
             _orderService.CreateOrder(Order);
             _cartService.ClearCart();
 
             return RedirectToPage("/OrderConfirmation", new { id = Order.OrderId });
         }
+
+        private int? GetCurrentUserId() =>
+            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) ? userId : null;
     }
 }

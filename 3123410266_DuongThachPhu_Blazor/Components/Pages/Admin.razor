@@ -39,7 +39,7 @@
                             <button class="admin-sidebar-link @(currentTab == "products" ? "active" : "")" @onclick="@(() => currentTab = "products")">
                                 <span class="sidebar-icon">📱</span>
                                 <span>Quản Lý Sản Phẩm</span>
-                                <span class="sidebar-count">@Catalog.Products.Count</span>
+                                <span class="sidebar-count">@Products.Count</span>
                             </button>
                         </Authorized>
                     </AuthorizeView>
@@ -248,7 +248,7 @@
 
                                 <select @bind="adminCatFilter" class="admin-cat-select">
                                     <option value="all">Tất cả danh mục</option>
-                                    @foreach (var c in Catalog.Categories)
+                                    @foreach (var c in Categories.OrderBy(category => category.Name))
                                     {
                                         <option value="@c.Name">@c.Name</option>
                                     }
@@ -374,7 +374,7 @@
                                                             <strong>@category.Name</strong>
                                                         }
                                                     </td>
-                                                    <td>@Catalog.Products.Count(product => product.CategoryId == category.Id)</td>
+                                                    <td>@Products.Count(product => product.CategoryId == category.Id)</td>
                                                     <td class="td-actions text-end">
                                                         @if (editingCategoryId == category.Id)
                                                         {
@@ -560,7 +560,7 @@
                                                     <td>@user.FullName</td>
                                                     <td>@user.PhoneNumber</td>
                                                     <td>
-                                                        <select class="admin-cat-select" value="@UserService.GetRoleId(user.Id)" disabled="@isUserActionBusy" @onchange="(e) => HandleRoleChange(user.Id, e)">
+                                                        <select class="admin-cat-select" value="@_userRoleIds.GetValueOrDefault(user.Id)" disabled="@isUserActionBusy" @onchange="(e) => HandleRoleChange(user.Id, e)">
                                                             @foreach (var role in AllRoles)
                                                             {
                                                                 <option value="@role.Id">@role.Name</option>
@@ -637,7 +637,7 @@
                                     <tbody>
                                         @foreach (var role in AllRoles)
                                         {
-                                            var rolePermissionCodes = RoleService.GetPermissionCodes(role.Id);
+                                            var rolePermissionCodes = _rolePermissionCodes.GetValueOrDefault(role.Id) ?? new HashSet<string>();
                                             <tr>
                                                 <td><strong>@role.Name</strong></td>
                                                 <td>@role.Description</td>
@@ -1045,22 +1045,61 @@
     private string editingCustomerName = "";
     private string editingCustomerPhone = "";
 
-    private List<Order> Orders => OrderService.GetOrders();
-    private List<User> AllUsers => UserService.GetAllWithRoles();
-    private List<Role> AllRoles => RoleService.GetRoles();
-    private List<Permission> PermissionCatalog => RoleService.GetPermissionCatalog();
-    private List<Category> Categories => CategoryService.GetAll();
-    private List<CustomerListItem> Customers => CustomerService.GetAll();
-    private List<User> UnlinkedUsers => CustomerService.GetUnlinkedUsers();
+    // Toàn bộ dữ liệu hiển thị dưới đây được nạp 1 lần vào các biến _xxx qua
+    // RefreshAdminData() (gọi ở OnInitialized và sau mỗi hành động làm thay đổi dữ
+    // liệu), KHÔNG query trực tiếp StoreDbContext trong lúc render nữa. Lý do: trước
+    // đây các property này tự truy vấn db mỗi lần render; khi 1 async handler (xóa
+    // tài khoản, đổi vai trò, tạo/xóa vai trò...) đang await giữa chừng mà Blazor lại
+    // render lại (ví dụ do toast tự ẩn), phần render đó đụng cùng StoreDbContext đang
+    // được async handler sử dụng => EF Core ném "A second operation was started on
+    // this context instance..." và làm crash cả circuit (không còn toast, không còn
+    // refresh, phải tải lại trang mới dùng tiếp được).
+    private List<Product> _products = new();
+    private List<Order> _orders = new();
+    private List<User> _allUsers = new();
+    private List<Role> _allRoles = new();
+    private List<Permission> _permissionCatalog = new();
+    private List<Category> _categories = new();
+    private List<CustomerListItem> _customers = new();
+    private List<User> _unlinkedUsers = new();
+    private OrderService.DashboardSummary _summary = new(0, new(0, 0, 0, 0, 0));
+    private Dictionary<int, HashSet<string>> _rolePermissionCodes = new();
+    private Dictionary<int, int?> _userRoleIds = new();
+
+    private List<Product> Products => _products;
+    private List<Order> Orders => _orders;
+    private List<User> AllUsers => _allUsers;
+    private List<Role> AllRoles => _allRoles;
+    private List<Permission> PermissionCatalog => _permissionCatalog;
+    private List<Category> Categories => _categories;
+    private List<CustomerListItem> Customers => _customers;
+    private List<User> UnlinkedUsers => _unlinkedUsers;
 
     private int PendingOrdersCount => Orders.Count(o => o.Status == "Chờ xác nhận");
-    private OrderService.DashboardSummary Summary => OrderService.GetDashboardSummary();
+    private OrderService.DashboardSummary Summary => _summary;
+
+    private void RefreshAdminData()
+    {
+        _products = Catalog.Products;
+        _orders = OrderService.GetOrders();
+        _allUsers = UserService.GetAllWithRoles();
+        _allRoles = RoleService.GetRoles();
+        _permissionCatalog = RoleService.GetPermissionCatalog();
+        _categories = CategoryService.GetAll();
+        _customers = CustomerService.GetAll();
+        _unlinkedUsers = CustomerService.GetUnlinkedUsers();
+        _summary = OrderService.GetDashboardSummary();
+        _rolePermissionCodes = _allRoles.ToDictionary(role => role.Id, role => RoleService.GetPermissionCodes(role.Id).ToHashSet());
+        _userRoleIds = _allUsers.ToDictionary(user => user.Id, user => UserService.GetRoleId(user.Id));
+    }
+
+    protected override void OnInitialized() => RefreshAdminData();
 
     private IEnumerable<Product> FilteredAdminProducts
     {
         get
         {
-            var query = Catalog.Products.AsEnumerable();
+            var query = Products.AsEnumerable();
 
             if (!string.IsNullOrWhiteSpace(adminSearch))
             {
@@ -1154,6 +1193,7 @@
         }
 
         showProductModal = false;
+        RefreshAdminData();
     }
 
     private void PromptDelete(Product product)
@@ -1168,6 +1208,7 @@
             var name = productToDelete.Name;
             Catalog.Remove(productToDelete.Id);
             productToDelete = null;
+            RefreshAdminData();
             ShowToast($"Đã xóa sản phẩm: {name}");
         }
     }
@@ -1178,6 +1219,7 @@
         orderActionError = result.Error;
         if (result.Success)
         {
+            RefreshAdminData();
             ShowToast($"Đã cập nhật trạng thái đơn hàng sang: {newStatus}");
         }
     }
@@ -1210,6 +1252,7 @@
         categoryActionError = result.Error;
         if (!result.Success) return;
         newCategoryName = "";
+        RefreshAdminData();
         ShowToast($"Đã thêm danh mục: {result.Category!.Name}");
     }
 
@@ -1220,6 +1263,7 @@
         if (!result.Success) return;
         newCustomerName = "";
         newCustomerPhone = "";
+        RefreshAdminData();
         ShowToast($"Đã thêm khách hàng: {result.Customer!.FullName}");
     }
 
@@ -1247,6 +1291,7 @@
         customerActionError = result.Error;
         if (!result.Success) return;
         CloseMapModal();
+        RefreshAdminData();
         ShowToast("Đã liên kết khách hàng với tài khoản.");
     }
 
@@ -1270,6 +1315,7 @@
         customerActionError = result.Error;
         if (!result.Success) return;
         CancelCustomerEdit();
+        RefreshAdminData();
         ShowToast("Đã cập nhật khách hàng.");
     }
 
@@ -1279,6 +1325,7 @@
         customerActionError = result.Error;
         if (result.Success)
         {
+            RefreshAdminData();
             ShowToast("Đã xóa khách hàng.");
         }
     }
@@ -1303,6 +1350,7 @@
         categoryActionError = result.Error;
         if (!result.Success) return;
         CancelCategoryEdit();
+        RefreshAdminData();
         ShowToast("Đã cập nhật danh mục.");
     }
 
@@ -1310,7 +1358,11 @@
     {
         var result = CategoryService.Delete(id);
         categoryActionError = result.Error;
-        if (result.Success) ShowToast("Đã xóa danh mục.");
+        if (result.Success)
+        {
+            RefreshAdminData();
+            ShowToast("Đã xóa danh mục.");
+        }
     }
 
     private void CancelOrder(int orderId)
@@ -1319,6 +1371,7 @@
         orderActionError = result.Error;
         if (result.Success)
         {
+            RefreshAdminData();
             ShowToast("Đã hủy đơn hàng thành công.");
         }
     }
@@ -1340,6 +1393,8 @@
             var (success, error) = await UserService.UpdateRoleAsync(userId, roleId);
             if (success)
             {
+                RefreshAdminData();
+                roleActionError = null;
                 ShowToast("Đã cập nhật vai trò người dùng.");
             }
             else
@@ -1365,6 +1420,8 @@
             var (success, error) = await UserService.SetUserLockoutAsync(userId, disable);
             if (success)
             {
+                RefreshAdminData();
+                accountActionError = null;
                 ShowToast(disable ? "Đã tắt tài khoản." : "Đã bật lại tài khoản.");
             }
             else
@@ -1390,6 +1447,8 @@
             var (success, error) = await UserService.DeleteUserAsync(userId);
             if (success)
             {
+                RefreshAdminData();
+                accountActionError = null;
                 ShowToast("Đã xóa tài khoản.");
             }
             else
@@ -1416,6 +1475,7 @@
             current.Remove(code);
         }
         RoleService.SetRolePermissions(role.Id, current);
+        RefreshAdminData();
     }
 
     private async Task HandleCreateRole()
@@ -1442,6 +1502,7 @@
             roleActionError = null;
             newRoleName = "";
             newRoleDescription = "";
+            RefreshAdminData();
             ShowToast("Đã tạo vai trò mới.");
         }
         finally
@@ -1459,6 +1520,7 @@
             roleActionError = success ? null : error;
             if (success)
             {
+                RefreshAdminData();
                 ShowToast("Đã xóa vai trò.");
             }
         }
@@ -1495,6 +1557,7 @@
             }
 
             showAccountModal = false;
+            RefreshAdminData();
             ShowToast($"Đã tạo tài khoản: {newAccount.Email}");
         }
         finally

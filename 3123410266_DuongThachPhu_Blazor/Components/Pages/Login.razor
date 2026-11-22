@@ -89,7 +89,7 @@
         var principal = await ClaimsFactory.CreateAsync(user);
         if (Permissions.HasAnyAdminAccess(principal))
         {
-            loginErrorMessage = "Tài khoản quản trị vui lòng đăng nhập tại trang quản trị (/admin/login).";
+            loginErrorMessage = "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.";
             return;
         }
 

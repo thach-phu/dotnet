@@ -162,7 +162,12 @@ namespace AspRazorPageProduct.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("OrderId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Orders");
                 });
@@ -774,6 +779,14 @@ namespace AspRazorPageProduct.Migrations
                 });
 
             modelBuilder.Entity("AspRazorPageProduct.Models.Customer", b =>
+                {
+                    b.HasOne("AspRazorPageProduct.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("AspRazorPageProduct.Models.Order", b =>
                 {
                     b.HasOne("AspRazorPageProduct.Models.User", null)
                         .WithMany()

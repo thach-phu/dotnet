@@ -25,7 +25,7 @@ namespace AspRazorPageProduct.Pages.Account
             }
             if (Permissions.HasAnyAdminAccess(principal))
             {
-                ModelState.AddModelError(string.Empty, "Tài khoản quản trị vui lòng đăng nhập tại trang quản trị (/admin/login).");
+                ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.");
                 return Page();
             }
 

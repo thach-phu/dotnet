@@ -49,6 +49,41 @@ namespace AspRazorPageProduct.Services
             return (true, null);
         }
 
+        /// <summary>Khách tự đăng ký tài khoản mới (trang /Account/Register) — luôn gán vai trò Customer.</summary>
+        public async Task<(bool Success, string? Error, User? User)> RegisterAsync(
+            string fullName, string phone, string email, string password)
+        {
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            if (await _userManager.FindByEmailAsync(normalizedEmail) is not null)
+            {
+                return (false, "Email này đã được sử dụng.", null);
+            }
+
+            var user = new User
+            {
+                UserName = normalizedEmail,
+                Email = normalizedEmail,
+                PhoneNumber = phone.Trim(),
+                FullName = fullName.Trim(),
+                CreatedAt = DateTime.Now,
+            };
+
+            var createResult = await _userManager.CreateAsync(user, password);
+            if (!createResult.Succeeded)
+            {
+                return (false, string.Join(" ", createResult.Errors.Select(e => e.Description)), null);
+            }
+
+            await _userManager.AddToRoleAsync(user, RoleNames.Customer);
+
+            // Khách tự đăng ký cũng là một khách hàng: tạo sẵn bản ghi Khách Hàng,
+            // liên kết luôn với tài khoản này để hiện trong trang Quản Lý Khách Hàng.
+            _db.Customers.Add(new Customer { FullName = user.FullName, Phone = user.PhoneNumber ?? "", UserId = user.Id });
+            _db.SaveChanges();
+
+            return (true, null, user);
+        }
+
         /// <summary>Admin tạo thẳng 1 tài khoản mới và gán sẵn vai trò (nút "Thêm tài khoản" ở trang quản trị).</summary>
         public async Task<(bool Success, string? Error, User? User)> CreateAccountAsync(
             string? fullName, string? phone, string email, string password, int roleId)

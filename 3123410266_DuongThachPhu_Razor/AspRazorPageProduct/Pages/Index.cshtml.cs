@@ -33,13 +33,13 @@ namespace AspRazorPageProduct.Pages
         public int PageIndex { get; set; } = 1;
 
         [BindProperty(SupportsGet = true)]
-        public int PageSize { get; set; } = 8;
+        public int PageSize { get; set; } = 6;
 
         public void OnGet()
         {
             // Kiểm tra và gán mặc định nếu nhận giá trị <= 0 từ model binding
             if (PageIndex < 1) PageIndex = 1;
-            if (PageSize <= 0) PageSize = 8;
+            if (PageSize <= 0) PageSize = 6;
 
             Categories = _productService.GetCategories();
 

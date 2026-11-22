@@ -15,9 +15,9 @@ namespace AspRazorPageProduct.Services
         }
 
         /// <summary>Khách tự hủy đơn của chính mình, chỉ khi đơn chưa được Admin duyệt (còn "Chờ xác nhận").</summary>
-        public OrderStatusUpdateResult CancelOrderByCustomer(string orderId, string customerEmail)
+        public OrderStatusUpdateResult CancelOrderByCustomer(string orderId, int userId)
         {
-            var order = _context.Orders.FirstOrDefault(o => o.OrderId == orderId && o.CustomerEmail == customerEmail);
+            var order = _context.Orders.FirstOrDefault(o => o.OrderId == orderId && o.UserId == userId);
             if (order is null) return new(false, "Không tìm thấy đơn hàng.");
             if (order.Status != "Chờ xác nhận")
             {
@@ -66,11 +66,11 @@ namespace AspRazorPageProduct.Services
                 .FirstOrDefault(o => o.OrderId == orderId);
         }
 
-        public List<Order> GetOrdersForCustomer(string email)
+        public List<Order> GetOrdersForCustomer(int userId)
         {
             return _context.Orders
                 .Include(o => o.Items).ThenInclude(i => i.Product)
-                .Where(o => o.CustomerEmail == email)
+                .Where(o => o.UserId == userId)
                 .OrderByDescending(o => o.OrderDate)
                 .ToList();
         }

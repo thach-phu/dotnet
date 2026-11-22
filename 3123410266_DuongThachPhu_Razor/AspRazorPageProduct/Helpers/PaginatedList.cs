@@ -14,7 +14,7 @@ namespace AspRazorPageProduct.Helpers
         public PaginatedList(List<T> items, int count, int pageIndex, int pageSize)
         {
             PageIndex = pageIndex < 1 ? 1 : pageIndex;
-            PageSize = pageSize <= 0 ? 8 : pageSize;
+            PageSize = pageSize <= 0 ? 6 : pageSize;
             TotalCount = count;
             TotalPages = (int)Math.Ceiling(count / (double)PageSize);
             if (TotalPages < 1) TotalPages = 1;
@@ -28,7 +28,7 @@ namespace AspRazorPageProduct.Helpers
         public static PaginatedList<T> Create(IQueryable<T> source, int pageIndex, int pageSize)
         {
             if (pageIndex < 1) pageIndex = 1;
-            if (pageSize <= 0) pageSize = 8;
+            if (pageSize <= 0) pageSize = 6;
 
             var count = source.Count();
             var items = source.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();

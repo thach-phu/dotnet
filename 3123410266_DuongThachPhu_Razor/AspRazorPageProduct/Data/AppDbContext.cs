@@ -66,6 +66,11 @@ namespace AspRazorPageProduct.Data
                       .HasForeignKey("OrderId")
                       .IsRequired()
                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne<User>()
+                      .WithMany()
+                      .HasForeignKey(o => o.UserId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<CartItem>(entity =>

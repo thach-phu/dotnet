@@ -29,8 +29,8 @@ namespace AspRazorPageProduct.Pages
             {
                 return RedirectToPage("/Index");
             }
-            if (!User.IsInRole("Admin") &&
-                !string.Equals(Order.CustomerEmail, User.FindFirstValue(ClaimTypes.Email), StringComparison.OrdinalIgnoreCase))
+            var currentUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : (int?)null;
+            if (!User.IsInRole("Admin") && Order.UserId != currentUserId)
                 return Forbid();
 
             return Page();
